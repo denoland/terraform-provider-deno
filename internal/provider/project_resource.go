@@ -3,7 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
-	"terraform-provider-deploy/client"
+	"terraform-provider-deno/client"
 	"time"
 
 	"github.com/google/uuid"

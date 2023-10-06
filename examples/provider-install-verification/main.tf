@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     deno = {
-      source = "github.com/denoland/deploy"
+      source = "github.com/denoland/deno"
     }
 
     cloudflare = {

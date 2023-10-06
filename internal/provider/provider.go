@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"terraform-provider-deploy/client"
+	"terraform-provider-deno/client"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"

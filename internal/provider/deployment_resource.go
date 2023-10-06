@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"terraform-provider-deploy/client"
+	"terraform-provider-deno/client"
 	"time"
 	"unicode/utf8"
 

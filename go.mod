@@ -1,4 +1,4 @@
-module terraform-provider-deploy
+module terraform-provider-deno
 
 go 1.21
 

@@ -35,4 +35,4 @@ website/vendor
 *.winfile eol=crlf
 
 # Binary
-terraform-provider-deploy
+terraform-provider-deno

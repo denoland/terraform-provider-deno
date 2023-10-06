@@ -8,7 +8,7 @@ import (
 	"flag"
 	"log"
 
-	"terraform-provider-deploy/internal/provider"
+	"terraform-provider-deno/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -40,7 +40,7 @@ func main() {
 
 	opts := providerserver.ServeOpts{
 		// Todo: unsure what form is publishable to the Hashicorp TF registry
-		Address: "github.com/denoland/deploy",
+		Address: "github.com/denoland/deno",
 		Debug:   debug,
 	}
 

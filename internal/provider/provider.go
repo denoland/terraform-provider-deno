@@ -62,14 +62,17 @@ func (p *deployProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "URI for the Deno API. Defaults to https://api.deno.com/v1. May be set by the DENO_API_HOST environment variable.",
 			},
 			"token": schema.StringAttribute{
-				Optional:  true,
-				Sensitive: true,
+				Optional:    true,
+				Sensitive:   true,
+				Description: "Access token. May be set by the DENO_DEPLOY_TOKEN environment variable. Tokens are created here: https://dash.deno.com/account#access-tokens.",
 			},
 			"organization_id": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "Deploy organization id. May be set by the DENO_DEPLOY_ORGANIZATION_ID environment variable. The organization id is visible in the url of the organization's project list - https://dash.deno.com/orgs/<organization_id>",
 			},
 		},
 	}

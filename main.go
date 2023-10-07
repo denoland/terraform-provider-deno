@@ -39,8 +39,9 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		// Todo: unsure what form is publishable to the Hashicorp TF registry
-		Address: "github.com/denoland/deno",
+		// This should match the Hashicorp Terraform registry name (denoland/deno).
+		// That name, in turn, uses the organization name (denoland) from github.
+		Address: "registry.terraform.io/denoland/deno",
 		Debug:   debug,
 	}
 

@@ -57,7 +57,9 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"name": schema.StringAttribute{
-				Required: true,
+				Optional:    true,
+				Computed:    true,
+				Description: "The name of the project. This must be globally unique, and must be between 3 and 26 characters, only contain a-z, 0-9 and -, must not start or end with a hyphen (-), and characters after hyphen (-) shouldn't be 8 or 12 in length. If not provided, a random name will be generated.",
 			},
 			"created_at": schema.StringAttribute{
 				Computed: true,
@@ -85,8 +87,14 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	// Generate API request body from plan
 
 	projName := plan.Name.ValueString()
+	var projNameForAPICall *string
+	if projName == "" {
+		projNameForAPICall = nil
+	} else {
+		projNameForAPICall = &projName
+	}
 	proj, err := r.client.CreateProjectWithResponse(ctx, r.organizationID, client.CreateProjectJSONRequestBody{
-		Name: &projName,
+		Name: projNameForAPICall,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(

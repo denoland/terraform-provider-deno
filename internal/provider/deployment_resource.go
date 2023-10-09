@@ -74,6 +74,11 @@ func (r *deploymentResource) Metadata(_ context.Context, req resource.MetadataRe
 // Schema defines the schema for the resource.
 func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A resource for a Deno Deploy deployment.
+
+A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"deployment_id": schema.StringAttribute{
 				Computed:    true,

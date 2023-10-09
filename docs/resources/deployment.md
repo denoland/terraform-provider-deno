@@ -3,12 +3,15 @@
 page_title: "deno_deployment Resource - terraform-provider-deno"
 subcategory: ""
 description: |-
-  
+  A resource for a Deno Deploy deployment.
+  A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
 ---
 
 # deno_deployment (Resource)
 
+A resource for a Deno Deploy deployment.
 
+A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
 
 ## Example Usage
 

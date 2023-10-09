@@ -51,31 +51,44 @@ func (r *domainResource) Metadata(_ context.Context, req resource.MetadataReques
 // Schema defines the schema for the resource.
 func (r *domainResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A resource for a custom domain.
+
+A custom domain is a per-organization resource, which can be associated with a deployment.
+In order to associate a custom domain with a deployment, you need to verify the ownership of the domain, then prepare TLS certificates for the domain. Refer to the example below for practical usage.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description: "The ID of the domain.",
 			},
 			"domain": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The custom domain, such as `foo.example.com`",
 			},
 			"token": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The token used for verifying the ownership of the domain.",
 			},
 			"dns_records": schema.ListNestedAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The DNS records that need to be added to the DNS nameserver.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Description: "The type of the DNS record such as `A`, `CNAME`, etc.",
 						},
 						"name": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Description: "The name of the DNS record.",
 						},
 						"content": schema.StringAttribute{
-							Computed: true,
+							Computed:    true,
+							Description: "The content of the DNS record. The value depends on the type of the DNS record. For example, for `A` record, it is the IP address of the domain.",
 						},
 					},
 				},
@@ -85,9 +98,13 @@ func (r *domainResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description:         "The time the domain was created, formmatting in RFC3339.",
+				MarkdownDescription: "The time the domain was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The time the domain was last updated, formmatting in RFC3339.",
+				MarkdownDescription: "The time the domain was updated, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 		},
 	}

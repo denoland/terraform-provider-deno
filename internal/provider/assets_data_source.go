@@ -34,9 +34,15 @@ func (d *assetsResource) Metadata(_ context.Context, req datasource.MetadataRequ
 // Schema defines the schema for the data source.
 func (d *assetsResource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A data source for a list of assets to be deployed.
+
+For how to use this data source with deno_deployment resource, please refer to the doc of deno_deployment resource.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"assets_glob": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`",
 			},
 			"assets_metadata": schema.MapNestedAttribute{
 				Computed: true,

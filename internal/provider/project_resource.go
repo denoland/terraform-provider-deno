@@ -66,9 +66,12 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description:         "The time the project was created, formatted in RFC3339.",
+				MarkdownDescription: "The time the project was created, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The time the project was last updated, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 		},
 	}

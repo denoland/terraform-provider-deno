@@ -21,6 +21,6 @@ description: |-
 
 ### Read-Only
 
-- `created_at` (String)
+- `created_at` (String) The time the project was created, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
 - `id` (String) The ID of this resource.
-- `updated_at` (String)
+- `updated_at` (String) The time the project was last updated, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).

@@ -60,6 +60,7 @@ A project consists of a collection of deployments and belongs to an organization
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description: "The ID of the project.",
 			},
 			"name": schema.StringAttribute{
 				Optional:    true,

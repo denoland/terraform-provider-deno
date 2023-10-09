@@ -76,29 +76,37 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"deployment_id": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The ID of the deployment.",
 			},
 			"project_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The project ID that this deployment belongs to.",
 			},
 			"status": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: `The status of the deployment, indicating whether the deployment succeeded or not. It can be "failed", "pending", or "success"`,
 			},
 			"domains": schema.SetAttribute{
 				Computed:    true,
 				ElementType: types.StringType,
+				Description: `The domain(s) that can be used to access the deployment.`,
 			},
 			"entry_point_url": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The path to the file that will be executed when the deployment is invoked.",
 			},
 			"import_map_url": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "The path to the import map file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used.",
 			},
 			"lock_file_url": schema.StringAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "The path to the lock file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config will be used.",
 			},
 			"compiler_options": schema.SingleNestedAttribute{
-				Optional: true,
+				Optional:    true,
+				Description: "Compiler options to be used when building the deployment. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used.",
 				Attributes: map[string]schema.Attribute{
 					"jsx": schema.StringAttribute{
 						Optional: true,
@@ -115,23 +123,29 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 				},
 			},
 			"assets": schema.MapNestedAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The entities that compose the deployment. A key represents a path to the entity.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"kind": schema.StringAttribute{
-							Required: true,
+							Required:    true,
+							Description: `The kind of entity: "file" or "symlink".`,
 						},
 						"git_sha1": schema.StringAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: `The git object hash for the file. This is valid only for kind == "file".`,
 						},
 						"target": schema.StringAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: `The target file path for the symlink. This is valid only for kind == "symlink".`,
 						},
 						"size": schema.NumberAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: `The filesize in bytes of the file. This is valid only for kind == "file".`,
 						},
 						"updated_at": schema.StringAttribute{
-							Optional: true,
+							Optional:    true,
+							Description: `The time the file was last updated. This is valid only for kind == "file".`,
 						},
 					},
 				},
@@ -159,12 +173,17 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 			"env_vars": schema.MapAttribute{
 				Optional:    true,
 				ElementType: types.StringType,
+				Description: "The environment variables to be set in the runtime environment of the deployment.",
 			},
 			"created_at": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The time the deployment was created, formmatting in RFC3339.",
+				MarkdownDescription: "The time the deployment was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				Description:         "The time the deployment was last updated, formmatting in RFC3339.",
+				MarkdownDescription: "The time the deployment was last updated, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,

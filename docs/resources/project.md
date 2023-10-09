@@ -36,5 +36,5 @@ resource "deno_project" "random_name" {}
 ### Read-Only
 
 - `created_at` (String) The time the project was created, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
-- `id` (String) The ID of this resource.
+- `id` (String) The ID of the project.
 - `updated_at` (String) The time the project was last updated, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).

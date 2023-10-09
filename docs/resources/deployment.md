@@ -72,12 +72,12 @@ resource "deno_deployment" "example1" {
 
 - `assets` (Attributes Map) The entities that compose the deployment. A key represents a path to the entity. (see [below for nested schema](#nestedatt--assets))
 - `entry_point_url` (String) The path to the file that will be executed when the deployment is invoked.
+- `env_vars` (Map of String) The environment variables to be set in the runtime environment of the deployment.
 - `project_id` (String) The project ID that this deployment belongs to.
 
 ### Optional
 
 - `compiler_options` (Attributes) Compiler options to be used when building the deployment. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used. (see [below for nested schema](#nestedatt--compiler_options))
-- `env_vars` (Map of String) The environment variables to be set in the runtime environment of the deployment.
 - `import_map_url` (String) The path to the import map file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used.
 - `lock_file_url` (String) The path to the lock file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config will be used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))

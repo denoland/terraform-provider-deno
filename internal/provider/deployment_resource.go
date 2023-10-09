@@ -169,7 +169,7 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 				},
 			},
 			"env_vars": schema.MapAttribute{
-				Optional:    true,
+				Required:    true,
 				ElementType: types.StringType,
 				Description: "The environment variables to be set in the runtime environment of the deployment.",
 			},

@@ -42,6 +42,5 @@ Read-Only:
 
 - `git_sha1` (String) The git object hash of the asset. It is only available for `file` asset.
 - `kind` (String) The kind of the asset. It can be either `file` or `symlink`.
-- `size` (Number) The size of the asset in bytes. It is only available for `file` asset.
 - `target` (String) The target path of the asset. It is only available for `symlink` asset.
 - `updated_at` (String) The last updated time of the asset. It is only available for `file` asset.

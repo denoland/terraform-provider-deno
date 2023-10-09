@@ -101,7 +101,6 @@ Required:
 Optional:
 
 - `git_sha1` (String) The git object hash for the file. This is valid only for kind == "file".
-- `size` (Number) The filesize in bytes of the file. This is valid only for kind == "file".
 - `target` (String) The target file path for the symlink. This is valid only for kind == "symlink".
 - `updated_at` (String) The time the file was last updated. This is valid only for kind == "file".
 
@@ -132,5 +131,4 @@ Read-Only:
 
 - `git_sha1` (String)
 - `path` (String)
-- `size` (Number)
 - `updated_at` (String)

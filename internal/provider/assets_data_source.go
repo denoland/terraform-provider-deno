@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"os"
 	"time"
 
@@ -59,10 +58,6 @@ For how to use this data source with deno_deployment resource, please refer to t
 						"target": schema.StringAttribute{
 							Computed:    true,
 							Description: "The target path of the asset. It is only available for `symlink` asset.",
-						},
-						"size": schema.NumberAttribute{
-							Computed:    true,
-							Description: "The size of the asset in bytes. It is only available for `file` asset.",
 						},
 						"updated_at": schema.StringAttribute{
 							Computed:    true,
@@ -127,7 +122,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringNull(),
 			"git_sha1":   types.StringNull(),
 			"target":     types.StringNull(),
-			"size":       types.NumberValue(big.NewFloat(float64(stat.Size()))),
 			"updated_at": types.StringValue(stat.ModTime().Format(time.RFC3339Nano)),
 		}
 
@@ -161,7 +155,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringType,
 			"git_sha1":   types.StringType,
 			"target":     types.StringType,
-			"size":       types.NumberType,
 			"updated_at": types.StringType,
 		}, value)
 		resp.Diagnostics.Append(diags...)
@@ -177,7 +170,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringType,
 			"git_sha1":   types.StringType,
 			"target":     types.StringType,
-			"size":       types.NumberType,
 			"updated_at": types.StringType,
 		},
 	}, metadata)

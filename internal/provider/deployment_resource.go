@@ -144,10 +144,6 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 							Optional:    true,
 							Description: `The target file path for the symlink. This is valid only for kind == "symlink".`,
 						},
-						"size": schema.NumberAttribute{
-							Optional:    true,
-							Description: `The filesize in bytes of the file. This is valid only for kind == "file".`,
-						},
 						"updated_at": schema.StringAttribute{
 							Optional:    true,
 							Description: `The time the file was last updated. This is valid only for kind == "file".`,
@@ -164,9 +160,6 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 							Computed: true,
 						},
 						"git_sha1": schema.StringAttribute{
-							Computed: true,
-						},
-						"size": schema.NumberAttribute{
 							Computed: true,
 						},
 						"updated_at": schema.StringAttribute{
@@ -594,7 +587,6 @@ Build logs:
 		AttrTypes: map[string]attr.Type{
 			"path":       types.StringType,
 			"git_sha1":   types.StringType,
-			"size":       types.NumberType,
 			"updated_at": types.StringType,
 		},
 	}, map[string]attr.Value{})

@@ -60,6 +60,9 @@ func (p *deployProvider) Metadata(_ context.Context, _ provider.MetadataRequest,
 // Schema defines the provider-level schema for configuration data.
 func (p *deployProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+The terraform provider for Deno Deploy offering management on Deno projects, custom domains, and deployments.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"token": schema.StringAttribute{
 				Optional:    true,

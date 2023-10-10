@@ -60,11 +60,10 @@ func (p *deployProvider) Metadata(_ context.Context, _ provider.MetadataRequest,
 // Schema defines the provider-level schema for configuration data.
 func (p *deployProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+The terraform provider for Deno Deploy offering management on Deno projects, custom domains, and deployments.
+		`,
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
-				Optional:    true,
-				Description: "URI for the Deno API. Defaults to https://api.deno.com/v1. May be set by the DENO_API_HOST environment variable.",
-			},
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
@@ -73,6 +72,10 @@ func (p *deployProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 			"organization_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Deploy organization id. May be set by the DENO_DEPLOY_ORGANIZATION_ID environment variable. The organization id is visible in the url of the organization's project list - https://dash.deno.com/orgs/<organization_id>",
+			},
+			"host": schema.StringAttribute{
+				Optional:    true,
+				Description: "URI for the Deno API. For normal use cases this value doesn't need to be set, in which case it defaults to https://api.deno.com/v1. May be set by the DENO_API_HOST environment variable.",
 			},
 		},
 	}

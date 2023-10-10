@@ -44,12 +44,19 @@ func (r *certificateProvisioningResource) Metadata(_ context.Context, req resour
 // Schema defines the schema for the resource.
 func (r *certificateProvisioningResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A resource for an automatic certificate provisioning of a custom domain.
+
+In order to assoaicte a custom domain with a deployment, certificates needs to be ready in some way. For more information regarding the setup process, please refer to the doc of deno_domain resource.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"domain_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The ID of the domain to provision certificates for.",
 			},
 			"provisioning_status": schema.StringAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The status of the certificate provisioning. Possible values are `success`, `failed`, `pending`, and `manual`.",
 			},
 		},
 	}

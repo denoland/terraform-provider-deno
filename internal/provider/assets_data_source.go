@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"os"
 	"time"
 
@@ -34,9 +33,15 @@ func (d *assetsResource) Metadata(_ context.Context, req datasource.MetadataRequ
 // Schema defines the schema for the data source.
 func (d *assetsResource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A data source for a list of assets to be deployed.
+
+For how to use this data source with deno_deployment resource, please refer to the doc of deno_deployment resource.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"assets_glob": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`",
 			},
 			"assets_metadata": schema.MapNestedAttribute{
 				Computed: true,
@@ -53,10 +58,6 @@ func (d *assetsResource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 						"target": schema.StringAttribute{
 							Computed:    true,
 							Description: "The target path of the asset. It is only available for `symlink` asset.",
-						},
-						"size": schema.NumberAttribute{
-							Computed:    true,
-							Description: "The size of the asset in bytes. It is only available for `file` asset.",
 						},
 						"updated_at": schema.StringAttribute{
 							Computed:    true,
@@ -121,7 +122,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringNull(),
 			"git_sha1":   types.StringNull(),
 			"target":     types.StringNull(),
-			"size":       types.NumberValue(big.NewFloat(float64(stat.Size()))),
 			"updated_at": types.StringValue(stat.ModTime().Format(time.RFC3339Nano)),
 		}
 
@@ -155,7 +155,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringType,
 			"git_sha1":   types.StringType,
 			"target":     types.StringType,
-			"size":       types.NumberType,
 			"updated_at": types.StringType,
 		}, value)
 		resp.Diagnostics.Append(diags...)
@@ -171,7 +170,6 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":       types.StringType,
 			"git_sha1":   types.StringType,
 			"target":     types.StringType,
-			"size":       types.NumberType,
 			"updated_at": types.StringType,
 		},
 	}, metadata)

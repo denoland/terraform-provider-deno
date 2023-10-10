@@ -49,12 +49,18 @@ func (r *projectResource) Metadata(_ context.Context, req resource.MetadataReque
 // Schema defines the schema for the resource.
 func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A resource for a Deno Deploy project.
+
+A project consists of a collection of deployments and belongs to an organization.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description: "The ID of the project.",
 			},
 			"name": schema.StringAttribute{
 				Optional:    true,
@@ -66,9 +72,12 @@ func (r *projectResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+				Description:         "The time the project was created, formatted in RFC3339.",
+				MarkdownDescription: "The time the project was created, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				Computed:            true,
+				MarkdownDescription: "The time the project was last updated, formatted in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
 		},
 	}

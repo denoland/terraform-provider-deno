@@ -45,12 +45,19 @@ func (r *domainVerificationResource) Metadata(_ context.Context, req resource.Me
 // Schema defines the schema for the resource.
 func (r *domainVerificationResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: `
+A resource for a ownership verification of a custom domain.
+
+In order to assoaicte a custom domain with a deployment, this process must be completed. For more information regarding the setup process, please refer to the doc of deno_domain resource.
+		`,
 		Attributes: map[string]schema.Attribute{
 			"domain_id": schema.StringAttribute{
-				Required: true,
+				Required:    true,
+				Description: "The ID of the domain to verify ownership of.",
 			},
 			"verified": schema.BoolAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "Whether or not the domain has been verified.",
 			},
 			"timeouts": timeouts.Attributes(ctx, timeouts.Opts{
 				Create: true,

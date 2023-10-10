@@ -31,7 +31,7 @@ data "deno_assets" "my_assets" {
   assets_glob = "../**/*.{ts,tsx,json,ico,svg,css}"
 }
 
-resource "deno_deployment" "example1" {
+resource "deno_deployment" "example" {
   # Project ID that the created deployment belongs to.
   project_id = deno_project.myproject.id
   # File path for the deployments' entry point.
@@ -44,4 +44,16 @@ resource "deno_deployment" "example1" {
   env_vars = {
     FOO = "42"
   }
+
+  ###############################################
+  # Custom domain association
+  ###############################################
+  #
+  # A custom domain can be associated with the deployment (optional).
+  # Note the domain must be verified for its ownership and certificates must be ready.
+  # See the doc of deno_domain resource for the full example of the entire process of domain setup.
+
+  # `depends_on` may be useful to ensure the domain is ready.
+  depends_on = [deno_certificate_provisioning.example]
+  domain_id  = deno_domain.example.id
 }

@@ -49,7 +49,7 @@ data "deno_assets" "my_assets" {
   assets_glob = "../**/*.{ts,tsx,json,ico,svg,css}"
 }
 
-resource "deno_deployment" "example1" {
+resource "deno_deployment" "example" {
   # Project ID that the created deployment belongs to.
   project_id = deno_project.myproject.id
   # File path for the deployments' entry point.
@@ -62,6 +62,18 @@ resource "deno_deployment" "example1" {
   env_vars = {
     FOO = "42"
   }
+
+  ###############################################
+  # Custom domain association
+  ###############################################
+  #
+  # A custom domain can be associated with the deployment (optional).
+  # Note the domain must be verified for its ownership and certificates must be ready.
+  # See the doc of deno_domain resource for the full example of the entire process of domain setup.
+
+  # `depends_on` may be useful to ensure the domain is ready.
+  depends_on = [deno_certificate_provisioning.example]
+  domain_id  = deno_domain.example.id
 }
 ```
 
@@ -78,6 +90,7 @@ resource "deno_deployment" "example1" {
 ### Optional
 
 - `compiler_options` (Attributes) Compiler options to be used when building the deployment. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used. (see [below for nested schema](#nestedatt--compiler_options))
+- `domain_id` (String) The ID of the custom domain to associate with the deployment. To associate, the domain must be verified for its ownership and its certificates must be ready. For further information, please refer to the doc of deno_domain resource.
 - `import_map_url` (String) The path to the import map file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used.
 - `lock_file_url` (String) The path to the lock file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config will be used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))

@@ -3,8 +3,7 @@
 page_title: "deno_certificate_provisioning Resource - terraform-provider-deno"
 subcategory: ""
 description: |-
-  A resource for an automatic certificate provisioning of a custom domain.
-  In order to assoaicte a custom domain with a deployment, certificates needs to be ready in some way. For more information regarding the setup process, please refer to the doc of deno_domain resource.
+A resource for automatically provisioning TLS certificates for a custom domains. To associate a custom domain with a deployment, certificates must be available. Please refer to the deno_domain resource documentation for more information.
 ---
 
 # deno_certificate_provisioning (Resource)

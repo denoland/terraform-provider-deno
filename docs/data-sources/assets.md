@@ -20,7 +20,7 @@ For how to use this data source with deno_deployment resource, please refer to t
 # For full example, see the doc of `deno_deployment`.
 
 data "deno_assets" "my_assets" {
-  assets_glob = "src/**/*.{ts,txt,png}"
+  glob = "src/**/*.{ts,txt,png}"
 }
 ```
 
@@ -29,14 +29,14 @@ data "deno_assets" "my_assets" {
 
 ### Required
 
-- `assets_glob` (String) The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`
+- `glob` (String) The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`
 
 ### Read-Only
 
-- `assets_metadata` (Attributes Map) (see [below for nested schema](#nestedatt--assets_metadata))
+- `output` (Attributes Map) (see [below for nested schema](#nestedatt--output))
 
-<a id="nestedatt--assets_metadata"></a>
-### Nested Schema for `assets_metadata`
+<a id="nestedatt--output"></a>
+### Nested Schema for `output`
 
 Read-Only:
 

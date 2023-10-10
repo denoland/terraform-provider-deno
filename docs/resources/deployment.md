@@ -4,14 +4,14 @@ page_title: "deno_deployment Resource - terraform-provider-deno"
 subcategory: ""
 description: |-
   A resource for a Deno Deploy deployment.
-  A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
+  A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned custom domain(s).
 ---
 
 # deno_deployment (Resource)
 
 A resource for a Deno Deploy deployment.
 
-A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
+A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned custom domain(s).
 
 ## Example Usage
 
@@ -67,13 +67,13 @@ resource "deno_deployment" "example" {
   # Custom domain association
   ###############################################
   #
-  # A custom domain can be associated with the deployment (optional).
-  # Note the domain must be verified for its ownership and certificates must be ready.
+  # Custom domain(s) can be associated with the deployment (optional).
+  # Note the domains must be verified for their ownership and certificates must be ready.
   # See the doc of deno_domain resource for the full example of the entire process of domain setup.
 
   # `depends_on` may be useful to ensure the domain is ready.
   depends_on = [deno_certificate_provisioning.example]
-  domain_id  = deno_domain.example.id
+  domain_ids = [deno_domain.example.id]
 }
 ```
 
@@ -90,7 +90,7 @@ resource "deno_deployment" "example" {
 ### Optional
 
 - `compiler_options` (Attributes) Compiler options to be used when building the deployment. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used. (see [below for nested schema](#nestedatt--compiler_options))
-- `domain_id` (String) The ID of the custom domain to associate with the deployment. To associate, the domain must be verified for its ownership and its certificates must be ready. For further information, please refer to the doc of deno_domain resource.
+- `domain_ids` (Set of String) The custom domain IDs to associate with the deployment. To associate, the domains must be verified for their ownership and their certificates must be ready. For further information, please refer to the doc of deno_domain resource.
 - `import_map_url` (String) The path to the import map file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config file will be used.
 - `lock_file_url` (String) The path to the lock file. If this is omitted and a deno config file (`deno.json` or `deno.jsonc`) is found in the assets, the value in the config will be used.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))

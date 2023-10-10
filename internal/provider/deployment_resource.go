@@ -45,7 +45,7 @@ type deploymentResourceModel struct {
 	DeploymentID    types.String         `tfsdk:"deployment_id"`
 	ProjectID       types.String         `tfsdk:"project_id"`
 	Status          types.String         `tfsdk:"status"`
-	DomainID        types.String         `tfsdk:"domain_id"`
+	DomainIDs       types.Set            `tfsdk:"domain_ids"`
 	Domains         types.Set            `tfsdk:"domains"`
 	EntryPointURL   types.String         `tfsdk:"entry_point_url"`
 	ImportMapURL    types.String         `tfsdk:"import_map_url"`
@@ -78,7 +78,7 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 		Description: `
 A resource for a Deno Deploy deployment.
 
-A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
+A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned custom domain(s).
 		`,
 		Attributes: map[string]schema.Attribute{
 			"deployment_id": schema.StringAttribute{
@@ -93,9 +93,10 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 				Computed:    true,
 				Description: `The status of the deployment, indicating whether the deployment succeeded or not. It can be "failed", "pending", or "success"`,
 			},
-			"domain_id": schema.StringAttribute{
+			"domain_ids": schema.SetAttribute{
 				Optional:    true,
-				Description: `The ID of the custom domain to associate with the deployment. To associate, the domain must be verified for its ownership and its certificates must be ready. For further information, please refer to the doc of deno_domain resource.`,
+				ElementType: types.StringType,
+				Description: `The custom domain IDs to associate with the deployment. To associate, the domains must be verified for their ownership and their certificates must be ready. For further information, please refer to the doc of deno_domain resource.`,
 			},
 			"domains": schema.SetAttribute{
 				Computed:    true,
@@ -418,36 +419,46 @@ func (r *deploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	// No domain association; nothing to do
-	if state.DomainID.ValueString() == "" {
+	domainIDs := []string{}
+	diags = state.DomainIDs.ElementsAs(ctx, &domainIDs, true)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	domainID, err := uuid.Parse(state.DomainID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", state.DomainID, state.DeploymentID),
-			fmt.Sprintf("Could not parse domain ID %s: %s", state.DomainID, err.Error()),
-		)
+	// No domain association; nothing to do
+	if len(domainIDs) == 0 {
 		return
 	}
 
-	// Call the API to disassociate the domain
-	result, err := r.client.UpdateDomainAssociationWithResponse(ctx, domainID, client.UpdateDomainAssociationRequest{
-		DeploymentId: nil,
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", state.DomainID, state.DeploymentID),
-			err.Error(),
-		)
-		return
-	}
-	if client.RespIsError(result) {
-		resp.Diagnostics.AddError(
-			fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", state.DomainID, state.DeploymentID),
-			client.APIErrorDetail(result.HTTPResponse, result.Body),
-		)
-		return
+	for _, rawDomainID := range domainIDs {
+		domainID, err := uuid.Parse(rawDomainID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				fmt.Sprintf("Could not parse domain ID %s: %s", rawDomainID, err.Error()),
+			)
+			continue
+		}
+
+		// Call the API to disassociate the domain
+		result, err := r.client.UpdateDomainAssociationWithResponse(ctx, domainID, client.UpdateDomainAssociationRequest{
+			DeploymentId: nil,
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				err.Error(),
+			)
+			continue
+		}
+		if client.RespIsError(result) {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				client.APIErrorDetail(result.HTTPResponse, result.Body),
+			)
+			continue
+		}
 	}
 }
 
@@ -485,18 +496,24 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		return accumulatedDiags
 	}
 
-	// Validate and parse domain ID as UUID (if present)
-	var domainID *uuid.UUID
-	if plan.DomainID.ValueString() != "" {
-		d, err := uuid.Parse(plan.DomainID.ValueString())
+	// Validate and parse domain IDs as UUID (if present)
+	var rawDomainIDs []string
+	var domainIDs []uuid.UUID
+	diags := plan.DomainIDs.ElementsAs(ctx, &rawDomainIDs, true)
+	accumulatedDiags.Append(diags...)
+	if accumulatedDiags.HasError() {
+		return accumulatedDiags
+	}
+	for _, rawDomainID := range rawDomainIDs {
+		d, err := uuid.Parse(rawDomainID)
 		if err != nil {
 			accumulatedDiags.AddError(
 				fmt.Sprintf("Unable to Create Deployment for Project %s", plan.ProjectID),
-				fmt.Sprintf("Could not parse domain ID %s: %s", plan.DomainID, err.Error()),
+				fmt.Sprintf("Could not parse domain ID %s: %s", rawDomainID, err.Error()),
 			)
 			return accumulatedDiags
 		}
-		domainID = &d
+		domainIDs = append(domainIDs, d)
 	}
 
 	assets, diag := prepareAssetsForUpload(ctx, plan.Assets)
@@ -506,7 +523,7 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 	}
 
 	var envVars map[string]string
-	diags := plan.EnvVars.ElementsAs(ctx, &envVars, true)
+	diags = plan.EnvVars.ElementsAs(ctx, &envVars, true)
 	accumulatedDiags.Append(diags...)
 	if accumulatedDiags.HasError() {
 		return accumulatedDiags
@@ -602,23 +619,25 @@ Build logs:
 	plan.UploadedAssets = uploadedAssets
 
 	// Associate the custom domain (if present)
-	if domainID != nil {
-		result, err := r.client.UpdateDomainAssociationWithResponse(ctx, *domainID, client.UpdateDomainAssociationRequest{
-			DeploymentId: &deploymentID,
-		})
-		if err != nil {
-			accumulatedDiags.AddError(
-				fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", plan.DomainID, deploymentID),
-				err.Error(),
-			)
-			return accumulatedDiags
-		}
-		if client.RespIsError(result) {
-			accumulatedDiags.AddError(
-				fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", plan.DomainID, deploymentID),
-				client.APIErrorDetail(result.HTTPResponse, result.Body),
-			)
-			return accumulatedDiags
+	if len(domainIDs) > 0 {
+		for _, domainID := range domainIDs {
+			result, err := r.client.UpdateDomainAssociationWithResponse(ctx, domainID, client.UpdateDomainAssociationRequest{
+				DeploymentId: &deploymentID,
+			})
+			if err != nil {
+				accumulatedDiags.AddError(
+					fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", domainID, deploymentID),
+					err.Error(),
+				)
+				return accumulatedDiags
+			}
+			if client.RespIsError(result) {
+				accumulatedDiags.AddError(
+					fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", domainID, deploymentID),
+					client.APIErrorDetail(result.HTTPResponse, result.Body),
+				)
+				return accumulatedDiags
+			}
 		}
 
 		// Custom domain association succeeded; call the get deployment API again to obtain the updated domain list

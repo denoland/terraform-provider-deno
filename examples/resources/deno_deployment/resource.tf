@@ -49,11 +49,11 @@ resource "deno_deployment" "example" {
   # Custom domain association
   ###############################################
   #
-  # A custom domain can be associated with the deployment (optional).
-  # Note the domain must be verified for its ownership and certificates must be ready.
+  # Custom domain(s) can be associated with the deployment (optional).
+  # Note the domains must be verified for their ownership and certificates must be ready.
   # See the doc of deno_domain resource for the full example of the entire process of domain setup.
 
   # `depends_on` may be useful to ensure the domain is ready.
   depends_on = [deno_certificate_provisioning.example]
-  domain_id  = deno_domain.example.id
+  domain_ids = [deno_domain.example.id]
 }

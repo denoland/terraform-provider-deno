@@ -2,5 +2,5 @@
 # For full example, see the doc of `deno_deployment`.
 
 data "deno_assets" "my_assets" {
-  assets_glob = "src/**/*.{ts,txt,png}"
+  glob = "src/**/*.{ts,txt,png}"
 }

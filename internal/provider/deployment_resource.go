@@ -366,6 +366,7 @@ func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	deploymentID := state.DeploymentID.ValueString()
 
 	diags = r.updateModel(ctx, deploymentID, &state)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

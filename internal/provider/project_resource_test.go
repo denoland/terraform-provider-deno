@@ -25,6 +25,20 @@ func TestAccProject(t *testing.T) {
 				`,
 				Check: resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
 			},
+			{
+				Config: `
+					resource "deno_project" "test" {
+						name = "test-project-2"
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
+			},
+			{
+				Config: `
+					// the project resource has been removed
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccProjectDestroy(t)),
+			},
 		},
 	})
 }
@@ -46,12 +60,21 @@ func testAccProjectExists(t *testing.T, resourceName string) resource.TestCheckF
 		if err != nil {
 			return fmt.Errorf("failed to parse project id %s: %s", rawProjectID, err)
 		}
+
+		projectName, ok := rs.Primary.Attributes["name"]
+		if !ok {
+			return fmt.Errorf("deno_project resource is missing name attribute")
+		}
+
 		resp, err := c.GetProjectWithResponse(context.Background(), projectID)
 		if err != nil {
 			return fmt.Errorf("failed to get project %s: %s", rawProjectID, err)
 		}
 		if client.RespIsError(resp) {
 			return fmt.Errorf("project %s does not exist: %s", rawProjectID, client.APIErrorDetail(resp.HTTPResponse, resp.Body))
+		}
+		if resp.JSON200.Name != projectName {
+			return fmt.Errorf("project %s has name %s, expected %s", rawProjectID, resp.JSON200.Name, projectName)
 		}
 
 		return nil

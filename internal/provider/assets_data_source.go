@@ -2,8 +2,6 @@ package provider
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -74,14 +72,6 @@ For how to use this data source with deno_deployment resource, please refer to t
 type assetsResourceModel struct {
 	AssetsGlob     types.String `tfsdk:"glob"`
 	AssetsMetadata types.Map    `tfsdk:"output"`
-}
-
-func calculateGitSha1(b []byte) string {
-	prefix := []byte(fmt.Sprintf("blob %d\x00", len(b)))
-	h := sha1.New()
-	h.Write(prefix)
-	h.Write(b)
-	return hex.EncodeToString(h.Sum(nil))
 }
 
 // Read refreshes the Terraform state with the latest data.

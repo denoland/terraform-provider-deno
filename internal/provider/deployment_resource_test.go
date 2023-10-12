@@ -1,11 +1,16 @@
 package provider_test
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
+	"time"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -34,7 +39,7 @@ func TestAccDeployment(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", "Hello world")),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
 			},
 		},
 	})
@@ -61,7 +66,7 @@ func TestAccDeployment(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", "sum: 42")),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 42"))),
 			},
 		},
 	})
@@ -88,13 +93,44 @@ func TestAccDeployment(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", "sum: 42")),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 42"))),
+			},
+		},
+	})
+
+	// Contains binary file (image)
+	expectedBinary, err := os.ReadFile("testdata/binary/computer_screen_programming.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						glob = "testdata/binary/**/*.{ts,png}"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/binary/main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", expectedBinary)),
 			},
 		},
 	})
 }
 
-func testAccCheckDeploymentDomains(t *testing.T, resourceName, expectedResponse string) resource.TestCheckFunc {
+func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedResponse []byte) resource.TestCheckFunc {
 	_ = getAPIClient(t)
 
 	return func(s *terraform.State) error {
@@ -111,6 +147,10 @@ func testAccCheckDeploymentDomains(t *testing.T, resourceName, expectedResponse 
 		if err != nil {
 			return fmt.Errorf("failed to parse the number of domains: %s", err)
 		}
+
+		// Wait for a bit to make sure domain mapping update is propagated
+		time.Sleep(3 * time.Second)
+
 		for i := 0; i < numDomains; i++ {
 			domain, ok := rs.Primary.Attributes[fmt.Sprintf("domains.%d", i)]
 			if !ok {
@@ -127,8 +167,22 @@ func testAccCheckDeploymentDomains(t *testing.T, resourceName, expectedResponse 
 				return fmt.Errorf("failed to read the response body (domain = %s): %s", domain, err)
 			}
 
-			if string(body) != expectedResponse {
-				return fmt.Errorf("the response body is expected %s, but got %s (domain = %s)", expectedResponse, string(body), domain)
+			if !bytes.Equal(body, expectedResponse) {
+				var expected string
+				if utf8.Valid(expectedResponse) {
+					expected = string(expectedResponse)
+				} else {
+					expected = base64.StdEncoding.EncodeToString(expectedResponse)
+				}
+
+				var got string
+				if utf8.Valid(body) {
+					got = string(body)
+				} else {
+					got = base64.StdEncoding.EncodeToString(body)
+				}
+
+				return fmt.Errorf("the response body is expected %s, but got %s (domain = %s)", expected, got, domain)
 			}
 		}
 

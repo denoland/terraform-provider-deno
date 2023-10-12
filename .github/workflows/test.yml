@@ -79,6 +79,8 @@ jobs:
           TF_ACC: "1"
           DENO_DEPLOY_ORGANIZATION_ID: "6a3ce81a-7ae8-4e72-ad2d-3eb4f723693b"
           DEPLOY_API_HOST: "https://api.deno-staging.com/v1"
+          # TODO: PRs from forked repos do not have access to secrets, causing acceptance tests to always fail due to missing env var.
+          # We need to come up with a solution for this to allow PRs from external contributors.
           DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10

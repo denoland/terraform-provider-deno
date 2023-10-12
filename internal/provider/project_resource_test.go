@@ -9,29 +9,27 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/thanhpk/randstr"
 )
 
+const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
+
 func TestAccProject(t *testing.T) {
+	projName := randstr.String(26, letters)
+	projName2 := randstr.String(26, letters)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		CheckDestroy:             testAccProjectDestroy(t),
 		Steps: []resource.TestStep{
 			{
-				Config: `
-					resource "deno_project" "test" {
-						name = "test-project"
-					}
-				`,
-				Check: resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
+				Config: genConfigWithProjectName(projName),
+				Check:  resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
 			},
 			{
-				Config: `
-					resource "deno_project" "test" {
-						name = "test-project-2"
-					}
-				`,
-				Check: resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
+				Config: genConfigWithProjectName(projName2),
+				Check:  resource.ComposeTestCheckFunc(testAccProjectExists(t, "deno_project.test")),
 			},
 			{
 				Config: `
@@ -41,6 +39,14 @@ func TestAccProject(t *testing.T) {
 			},
 		},
 	})
+}
+
+func genConfigWithProjectName(projectName string) string {
+	return fmt.Sprintf(`
+		resource "deno_project" "test" {
+			name = "%s"
+		}
+	`, projectName)
 }
 
 func testAccProjectExists(t *testing.T, resourceName string) resource.TestCheckFunc {

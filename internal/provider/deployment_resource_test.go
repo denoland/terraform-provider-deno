@@ -158,6 +158,7 @@ func TestAccDeployment(t *testing.T) {
 	})
 }
 
+// nolint:unparam
 func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedResponse []byte) resource.TestCheckFunc {
 	_ = getAPIClient(t)
 

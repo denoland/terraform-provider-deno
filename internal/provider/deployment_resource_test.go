@@ -211,6 +211,41 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+
+	// lockfile
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						glob = "testdata/lockfile/*"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/lockfile/main.ts"
+						lock_file_url = "testdata/lockfile/deno.lock"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte(` _______
+< Hello >
+ -------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||`))),
+			},
+		},
+	})
 }
 
 // nolint:unparam

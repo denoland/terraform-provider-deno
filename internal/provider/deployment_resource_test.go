@@ -16,8 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func TestAccDeployment(t *testing.T) {
-	// Single file project
+func TestAccDeployment_SingleFile(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -43,7 +42,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
+func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
 	// TODO: This isn't working now. Uncomment this test case once it's resolved.
 	// Issue: https://github.com/denoland/terraform-provider-deno/issues/18
 	// Single file project without compiler_options
@@ -71,8 +72,9 @@ func TestAccDeployment(t *testing.T) {
 	// 		},
 	// 	},
 	// })
+}
 
-	// Mutli-file project
+func TestAccDeployment_MultiFile(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -98,8 +100,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// Contains symlink
+func TestAccDeployment_Symlink(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -125,8 +128,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// Contains binary file (image)
+func TestAccDeployment_Binary(t *testing.T) {
 	expectedBinary, err := os.ReadFile("testdata/binary/computer_screen_programming.png")
 	if err != nil {
 		t.Fatal(err)
@@ -156,8 +160,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// tsx
+func TestAccDeployment_TSX(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -183,8 +188,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// import_map
+func TestAccDeployment_ImportMap(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -211,8 +217,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// lockfile
+func TestAccDeployment_LockFile(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -246,8 +253,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// env_vars
+func TestAccDeployment_EnvVars(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -275,8 +283,9 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+}
 
-	// automatic deno.json discovery
+func TestAccDeployment_ConfigAutoDiscovery(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

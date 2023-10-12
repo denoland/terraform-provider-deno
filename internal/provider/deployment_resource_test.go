@@ -12,6 +12,7 @@ import (
 )
 
 func TestAccDeployment(t *testing.T) {
+	// Single file project
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -22,18 +23,45 @@ func TestAccDeployment(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/TestAccDeployment/main.ts"
+						glob = "testdata/single-file/main.ts"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/TestAccDeployment/main.ts"
+						entry_point_url = "testdata/single-file/main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", "Hello world")),
+			},
+		},
+	})
+
+	// Mutli-file project
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						glob = "testdata/multi-file/**/*.{ts,json}"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/multi-file/main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", "sum: 42")),
 			},
 		},
 	})

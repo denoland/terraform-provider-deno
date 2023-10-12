@@ -14,9 +14,13 @@ import (
 
 const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
 
+func randomProjectName() string {
+	return randstr.String(26, letters)
+}
+
 func TestAccProject(t *testing.T) {
-	projName := randstr.String(26, letters)
-	projName2 := randstr.String(26, letters)
+	projName := randomProjectName()
+	projName2 := randomProjectName()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

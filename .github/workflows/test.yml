@@ -33,6 +33,17 @@ jobs:
         uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc # v3.7.0
         with:
           version: latest
+  
+  format:
+    name: deno fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608 # v4.1.0
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - name: deno fmt --check
+        run: deno fmt --check --ignore=docs/,.github/
 
   generate:
     runs-on: ubuntu-latest

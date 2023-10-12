@@ -12,8 +12,8 @@ on:
       - 'README.md'
 
 # Testing only needs permissions to read the repository contents.
-#permissions:
-#  contents: read
+permissions:
+  contents: read
 
 jobs:
   # Ensure project builds before running testing matrix

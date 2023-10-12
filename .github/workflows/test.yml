@@ -10,6 +10,10 @@ on:
   push:
     paths-ignore:
       - 'README.md'
+  # Allow testing on pull requests from forks, only when a label named "acceptance test" is applied.
+  pull_request_target:
+    types:
+      - labeled
 
 # Testing only needs permissions to read the repository contents.
 permissions:
@@ -53,6 +57,8 @@ jobs:
     name: Terraform Provider Acceptance Tests
     needs: build
     runs-on: ubuntu-latest
+    # Run acceptance test only when the label "acceptance test" is applied.
+    if: contains(github.event.pull_request.labels.*.name, 'acceptance test')
     timeout-minutes: 15
     strategy:
       fail-fast: false

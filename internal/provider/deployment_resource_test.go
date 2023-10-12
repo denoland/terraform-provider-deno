@@ -246,6 +246,35 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+
+	// env_vars
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						glob = "testdata/env_var/main.ts"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/env_var/main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {
+							"FOO" = "Deno"
+						}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello Deno"))),
+			},
+		},
+	})
 }
 
 // nolint:unparam

@@ -275,6 +275,33 @@ func TestAccDeployment(t *testing.T) {
 			},
 		},
 	})
+
+	// automatic deno.json discovery
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						glob = "testdata/config_auto_discovery/**/*"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/config_auto_discovery/main.tsx"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("<h1>Hello World!</h1>"))),
+			},
+		},
+	})
 }
 
 // nolint:unparam

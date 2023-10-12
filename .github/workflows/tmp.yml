@@ -1,0 +1,23 @@
+name: Tmp
+
+on:
+    pull_request:
+    push:
+        branches:
+        - main
+
+
+jobs:
+    env-check:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - uses: denoland/setup-deno@v1
+        - name: run show-env.ts
+          env:
+            TF_ACC: "1"
+            DENO_DEPLOY_ORGANIZATION_ID: "6a3ce81a-7ae8-4e72-ad2d-3eb4f723693b"
+            DEPLOY_API_HOST: ${{ vars.DEPLOY_API_HOST }}
+            DENO_DEPLOY_TOKEN: ${{ secrets.DENO_DEPLOY_TOKEN }}
+          run: deno run -A show-env.ts
+

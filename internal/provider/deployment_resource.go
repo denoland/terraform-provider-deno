@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -188,17 +187,6 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 			}),
 		},
 	}
-}
-
-// encodePath applies URL encoding to the given path, with directory separator
-// `/` preserved.
-func encodePath(path string) string {
-	arr := []string{}
-	for _, part := range strings.Split(path, "/") {
-		escaped := url.QueryEscape(part)
-		arr = append(arr, escaped)
-	}
-	return strings.Join(arr, "/")
 }
 
 func prepareAssetsForUpload(ctx context.Context, plannedAssets types.Map) (client.Assets, diag.Diagnostic) {

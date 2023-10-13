@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "dev": "deno run --watch main.ts"
+  },
+  "imports": {
+    "std/": "https://deno.land/std@0.202.0/",
+    "preact": "npm:preact@10",
+    "preact-render-to-string": "npm:preact-render-to-string@6"
+  },
+  "lock": "my.lock"
+}

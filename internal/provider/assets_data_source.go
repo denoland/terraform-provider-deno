@@ -2,8 +2,6 @@ package provider
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -39,11 +37,11 @@ A data source for a list of assets to be deployed.
 For how to use this data source with deno_deployment resource, please refer to the doc of deno_deployment resource.
 		`,
 		Attributes: map[string]schema.Attribute{
-			"assets_glob": schema.StringAttribute{
+			"glob": schema.StringAttribute{
 				Required:    true,
 				Description: "The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`",
 			},
-			"assets_metadata": schema.MapNestedAttribute{
+			"output": schema.MapNestedAttribute{
 				Computed: true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -72,16 +70,8 @@ For how to use this data source with deno_deployment resource, please refer to t
 
 // assetsResourceModel maps the data source schema data.
 type assetsResourceModel struct {
-	AssetsGlob     types.String `tfsdk:"assets_glob"`
-	AssetsMetadata types.Map    `tfsdk:"assets_metadata"`
-}
-
-func calculateGitSha1(b []byte) string {
-	prefix := []byte(fmt.Sprintf("blob %d\x00", len(b)))
-	h := sha1.New()
-	h.Write(prefix)
-	h.Write(b)
-	return hex.EncodeToString(h.Sum(nil))
+	AssetsGlob     types.String `tfsdk:"glob"`
+	AssetsMetadata types.Map    `tfsdk:"output"`
 }
 
 // Read refreshes the Terraform state with the latest data.

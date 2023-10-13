@@ -58,7 +58,7 @@ resource "deno_domain_verification" "example_domain_verification" {
   }
 }
 
-resource "deno_certificate_provisioning" "example_certificate_provisioning" {
+resource "deno_domain_certificate" "example_domain_certificate" {
   depends_on = [deno_domain_verification.example_domain_verification]
 
   domain_id = deno_domain.example_domain.id

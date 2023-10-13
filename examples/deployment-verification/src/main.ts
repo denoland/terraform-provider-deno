@@ -6,10 +6,12 @@ const assets = [...walkSync("/")].map((entry) => ({
 }));
 const envVars = Object.fromEntries(
   Object.entries(Deno.env.toObject()).filter(
-    ([key, _value]) => !key.startsWith("DENO_")
-  )
+    ([key, _value]) => !key.startsWith("DENO_"),
+  ),
 );
 Deno.serve(async () => {
-  return new Response(await Deno.readFile("./src/images/computer_screen_programming.png"));
+  return new Response(
+    await Deno.readFile("./src/images/computer_screen_programming.png"),
+  );
   //return new Response(JSON.stringify({ assets, envVars }));
 });

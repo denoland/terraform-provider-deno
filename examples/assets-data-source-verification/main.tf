@@ -26,9 +26,9 @@ provider "deno" {
 }
 
 data "deno_assets" "my_assets" {
-  assets_glob = "../../**/*.md"
+  glob = "../../**/*.md"
 }
 
 output "assets" {
-  value = data.deno_assets.my_assets.assets_metadata
+  value = data.deno_assets.my_assets.output
 }

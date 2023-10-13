@@ -81,7 +81,7 @@ resource "deno_domain_verification" "example" {
 
 # Provision a certificate for the domain.
 # The certificate will be managed by Deno Deploy.
-resource "deno_certificate_provisioning" "example" {
+resource "deno_domain_certificate" "example" {
   depends_on = [deno_domain_verification.example]
 
   domain_id = deno_domain.example.id

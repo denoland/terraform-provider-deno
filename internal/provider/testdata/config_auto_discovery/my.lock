@@ -1,0 +1,27 @@
+{
+  "version": "3",
+  "packages": {
+    "specifiers": {
+      "npm:preact-render-to-string@6": "npm:preact-render-to-string@6.2.1_preact@10.17.1",
+      "npm:preact@10": "npm:preact@10.17.1"
+    },
+    "npm": {
+      "preact-render-to-string@6.2.1_preact@10.17.1": {
+        "integrity": "sha512-5t7nFeMUextd53igL3GAakAAMaUD+dVWDHaRYaeh1tbPIjQIBtgJnMw6vf8VS/lviV0ggFtkgebatPxvtJsXyQ==",
+        "dependencies": {
+          "preact": "preact@10.17.1",
+          "pretty-format": "pretty-format@3.8.0"
+        }
+      },
+      "preact@10.17.1": {
+        "integrity": "sha512-X9BODrvQ4Ekwv9GURm9AKAGaomqXmip7NQTZgY7gcNmr7XE83adOMJvd3N42id1tMFU7ojiynRsYnY6/BRFxLA==",
+        "dependencies": {}
+      },
+      "pretty-format@3.8.0": {
+        "integrity": "sha512-WuxUnVtlWL1OfZFQFuqvnvs6MiAGk9UNsBostyBOB0Is9wb5uRESevA6rnl/rkksXaGX3GzZhPup5d6Vp1nFew==",
+        "dependencies": {}
+      }
+    }
+  },
+  "remote": {}
+}

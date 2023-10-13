@@ -38,7 +38,7 @@ type certificateProvisioningResourceModel struct {
 
 // Metadata returns the resource type name.
 func (r *certificateProvisioningResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_certificate_provisioning"
+	resp.TypeName = req.ProviderTypeName + "_domain_certificate"
 }
 
 // Schema defines the schema for the resource.

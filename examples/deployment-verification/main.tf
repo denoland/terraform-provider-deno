@@ -30,7 +30,7 @@ resource "deno_project" "sample_project" {
 }
 
 data "deno_assets" "my_assets" {
-  assets_glob = "src/**/*.{ts,txt,png}"
+  glob = "src/**/*.{ts,txt,png}"
 }
 
 resource "deno_deployment" "sample_deployment2" {
@@ -40,7 +40,7 @@ resource "deno_deployment" "sample_deployment2" {
     jsx               = "react-jsx"
     jsx_import_source = "preact"
   }
-  assets = data.deno_assets.my_assets.assets_metadata
+  assets = data.deno_assets.my_assets.output
   env_vars = {
     FOO = "9"
   }

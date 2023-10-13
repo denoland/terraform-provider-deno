@@ -45,9 +45,6 @@ func TestAccDeployment_SingleFile(t *testing.T) {
 }
 
 func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
-	// TODO: This isn't working now. Uncomment this test case once it's resolved.
-	// Issue: https://github.com/denoland/terraform-provider-deno/issues/18
-	// Single file project without compiler_options
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,

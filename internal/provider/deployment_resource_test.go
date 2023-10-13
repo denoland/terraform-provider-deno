@@ -52,19 +52,19 @@ func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: `
-	 				resource "deno_project" "test" {}
+					resource "deno_project" "test" {}
 
-	 				data "deno_assets" "test" {
-	 					glob = "testdata/single-file/main.ts"
-	 				}
+					data "deno_assets" "test" {
+						glob = "testdata/single-file/main.ts"
+					}
 
-	 				resource "deno_deployment" "test" {
-	 					project_id = deno_project.test.id
-	 					entry_point_url = "testdata/single-file/main.ts"
-	 					assets = data.deno_assets.test.output
-	 					env_vars = {}
-	 				}
-	 			`,
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "testdata/single-file/main.ts"
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
 				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
 			},
 		},

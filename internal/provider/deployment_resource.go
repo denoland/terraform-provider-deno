@@ -44,6 +44,7 @@ type deploymentResourceModel struct {
 	DeploymentID    types.String         `tfsdk:"deployment_id"`
 	ProjectID       types.String         `tfsdk:"project_id"`
 	Status          types.String         `tfsdk:"status"`
+	DomainIDs       types.Set            `tfsdk:"domain_ids"`
 	Domains         types.Set            `tfsdk:"domains"`
 	EntryPointURL   types.String         `tfsdk:"entry_point_url"`
 	ImportMapURL    types.String         `tfsdk:"import_map_url"`
@@ -76,7 +77,7 @@ func (r *deploymentResource) Schema(ctx context.Context, _ resource.SchemaReques
 		Description: `
 A resource for a Deno Deploy deployment.
 
-A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned a custom domain.
+A deployment belongs to a project, is an immutable, invokable snapshot of the project's assets, can be assigned custom domain(s).
 		`,
 		Attributes: map[string]schema.Attribute{
 			"deployment_id": schema.StringAttribute{
@@ -90,6 +91,11 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 			"status": schema.StringAttribute{
 				Computed:    true,
 				Description: `The status of the deployment, indicating whether the deployment succeeded or not. It can be "failed", "pending", or "success"`,
+			},
+			"domain_ids": schema.SetAttribute{
+				Optional:    true,
+				ElementType: types.StringType,
+				Description: `The custom domain IDs to associate with the deployment. To associate, the domains must be verified for their ownership and their certificates must be ready. For further information, please refer to the doc of deno_domain resource.`,
 			},
 			"domains": schema.SetAttribute{
 				Computed:    true,
@@ -347,34 +353,11 @@ func (r *deploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	deploymentID := state.DeploymentID.ValueString()
 
-	deployment, err := r.client.GetDeploymentWithResponse(ctx, deploymentID)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to Get Deployment Details",
-			fmt.Sprintf("Deployment ID: %s, Error: %s", deploymentID, err.Error()),
-		)
-		return
-	}
-	if client.RespIsError(deployment) {
-		resp.Diagnostics.AddError(
-			"Failed to Get Deployment Details",
-			fmt.Sprintf("Deployment ID: %s, Error: %s", deploymentID, client.APIErrorDetail(deployment.HTTPResponse, deployment.Body)),
-		)
-		return
-	}
-
-	state.Status = types.StringValue(string(deployment.JSON200.Status))
-	domainElems := make([]attr.Value, len(*deployment.JSON200.Domains))
-	for i, d := range *deployment.JSON200.Domains {
-		domainElems[i] = types.StringValue(d)
-	}
-	domainSet, diags := types.SetValue(basetypes.StringType{}, domainElems)
+	diags = r.updateModel(ctx, deploymentID, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.Domains = domainSet
-	state.UpdatedAt = types.StringValue(deployment.JSON200.UpdatedAt.Format(time.RFC3339))
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -413,7 +396,59 @@ func (r *deploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *deploymentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	// noop
+	// No opeation is needed for deployment since it is immutable,
+	// but we disassociate the domain (if any) from the deployment.
+
+	// Get current state
+	var state deploymentResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// No domain association; nothing to do
+	domainIDs := []string{}
+	diags = state.DomainIDs.ElementsAs(ctx, &domainIDs, true)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// No domain association; nothing to do
+	if len(domainIDs) == 0 {
+		return
+	}
+
+	for _, rawDomainID := range domainIDs {
+		domainID, err := uuid.Parse(rawDomainID)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				fmt.Sprintf("Could not parse domain ID %s: %s", rawDomainID, err.Error()),
+			)
+			continue
+		}
+
+		// Call the API to disassociate the domain
+		result, err := r.client.UpdateDomainAssociationWithResponse(ctx, domainID, client.UpdateDomainAssociationRequest{
+			DeploymentId: nil,
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				err.Error(),
+			)
+			continue
+		}
+		if client.RespIsError(result) {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Disassociate the Domain %s from the Deployment %s", rawDomainID, state.DeploymentID),
+				client.APIErrorDetail(result.HTTPResponse, result.Body),
+			)
+			continue
+		}
+	}
 }
 
 // Configure adds the provider configured client to the resource.
@@ -440,6 +475,7 @@ func (r *deploymentResource) Configure(_ context.Context, req resource.Configure
 func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentResourceModel) diag.Diagnostics {
 	accumulatedDiags := diag.Diagnostics{}
 
+	// Validate and parse project ID as UUID
 	projectID, err := uuid.Parse(plan.ProjectID.ValueString())
 	if err != nil {
 		accumulatedDiags.AddError(
@@ -449,6 +485,26 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		return accumulatedDiags
 	}
 
+	// Validate and parse domain IDs as UUID (if present)
+	var rawDomainIDs []string
+	var domainIDs []uuid.UUID
+	diags := plan.DomainIDs.ElementsAs(ctx, &rawDomainIDs, true)
+	accumulatedDiags.Append(diags...)
+	if accumulatedDiags.HasError() {
+		return accumulatedDiags
+	}
+	for _, rawDomainID := range rawDomainIDs {
+		d, err := uuid.Parse(rawDomainID)
+		if err != nil {
+			accumulatedDiags.AddError(
+				fmt.Sprintf("Unable to Create Deployment for Project %s", plan.ProjectID),
+				fmt.Sprintf("Could not parse domain ID %s: %s", rawDomainID, err.Error()),
+			)
+			return accumulatedDiags
+		}
+		domainIDs = append(domainIDs, d)
+	}
+
 	assets, diag := prepareAssetsForUpload(ctx, plan.Assets)
 	accumulatedDiags.Append(diag)
 	if accumulatedDiags.HasError() {
@@ -456,7 +512,7 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 	}
 
 	var envVars map[string]string
-	diags := plan.EnvVars.ElementsAs(ctx, &envVars, true)
+	diags = plan.EnvVars.ElementsAs(ctx, &envVars, true)
 	accumulatedDiags.Append(diags...)
 	if accumulatedDiags.HasError() {
 		return accumulatedDiags
@@ -516,34 +572,14 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		logs[i] = fmt.Sprintf("[%s] %s", logline.Level, logline.Message)
 	}
 
-	deployment, err := r.client.GetDeploymentWithResponse(ctx, deploymentID)
-	if err != nil {
-		accumulatedDiags.AddError(
-			"Deployment Initiated, but Failed to Get Deployment Details",
-			fmt.Sprintf(`Deployment ID: %s
-Error: %s
-
-Build logs:
-%s
-`, deploymentID, err.Error(), strings.Join(logs, "\n")),
-		)
-		return accumulatedDiags
-	}
-	if client.RespIsError(deployment) {
-		accumulatedDiags.AddError(
-			"Deployment Initiated, but Failed to Get Deployment Details",
-			fmt.Sprintf(`Deployment ID: %s
-Error: %s
-
-Build logs:
-%s
-`, deploymentID, client.APIErrorDetail(deployment.HTTPResponse, deployment.Body), strings.Join(logs, "\n")),
-		)
+	diags = r.updateModel(ctx, deploymentID, plan)
+	accumulatedDiags.Append(diags...)
+	if accumulatedDiags.HasError() {
 		return accumulatedDiags
 	}
 
 	// Ensure the deployment has succeeded
-	if deployment.JSON200.Status != client.DeploymentStatusSuccess {
+	if plan.Status.ValueString() != string(client.DeploymentStatusSuccess) {
 		accumulatedDiags.AddError(
 			"Deployment Failed",
 			fmt.Sprintf(`Deployment ID: %s
@@ -551,25 +587,12 @@ Status: %s
 
 Build logs:
 %s
-`, deploymentID, deployment.JSON200.Status, strings.Join(logs, "\n")),
+`, deploymentID, plan.Status, strings.Join(logs, "\n")),
 		)
 		return accumulatedDiags
 	}
 
-	// Deployment succeeded
-	plan.DeploymentID = types.StringValue(deployment.JSON200.Id)
-	plan.Status = types.StringValue(string(deployment.JSON200.Status))
-	domainElems := make([]attr.Value, len(*deployment.JSON200.Domains))
-	for i, d := range *deployment.JSON200.Domains {
-		domainElems[i] = types.StringValue(d)
-	}
-	domainSet, diags := types.SetValue(basetypes.StringType{}, domainElems)
-	accumulatedDiags.Append(diags...)
-	if accumulatedDiags.HasError() {
-		return accumulatedDiags
-	}
-	plan.Domains = domainSet
-
+	// Save the uploaded assets to the state so we can avoid duplicate uploads in future deployments.
 	// TODO: we haven't implemented the logic to avoid duplicate uploads
 	uploadedAssets, diags := types.MapValue(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
@@ -584,8 +607,71 @@ Build logs:
 	}
 	plan.UploadedAssets = uploadedAssets
 
-	plan.CreatedAt = types.StringValue(deployment.JSON200.CreatedAt.Format(time.RFC3339))
-	plan.UpdatedAt = types.StringValue(deployment.JSON200.UpdatedAt.Format(time.RFC3339))
+	// Associate the custom domain (if present)
+	if len(domainIDs) > 0 {
+		for _, domainID := range domainIDs {
+			result, err := r.client.UpdateDomainAssociationWithResponse(ctx, domainID, client.UpdateDomainAssociationRequest{
+				DeploymentId: &deploymentID,
+			})
+			if err != nil {
+				accumulatedDiags.AddError(
+					fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", domainID, deploymentID),
+					err.Error(),
+				)
+				return accumulatedDiags
+			}
+			if client.RespIsError(result) {
+				accumulatedDiags.AddError(
+					fmt.Sprintf("Unable to Associate the Domain %s with the Deployment %s", domainID, deploymentID),
+					client.APIErrorDetail(result.HTTPResponse, result.Body),
+				)
+				return accumulatedDiags
+			}
+		}
+
+		// Custom domain association succeeded; call the get deployment API again to obtain the updated domain list
+		r.updateModel(ctx, deploymentID, plan)
+	}
+
+	return accumulatedDiags
+}
+
+// UpdateModel updates the resource model with the latest information obtained by making a API call.
+func (r *deploymentResource) updateModel(ctx context.Context, deploymentID string, model *deploymentResourceModel) diag.Diagnostics {
+	accumulatedDiags := diag.Diagnostics{}
+
+	deployment, err := r.client.GetDeploymentWithResponse(ctx, deploymentID)
+	if err != nil {
+		accumulatedDiags.AddError(
+			"Failed to Get Deployment Details",
+			fmt.Sprintf("Deployment ID: %s, Error: %s", deploymentID, err.Error()),
+		)
+		return accumulatedDiags
+	}
+	if client.RespIsError(deployment) {
+		accumulatedDiags.AddError(
+			"Failed to Get Deployment Details",
+			fmt.Sprintf("Deployment ID: %s, Error: %s", deploymentID, client.APIErrorDetail(deployment.HTTPResponse, deployment.Body)),
+		)
+		return accumulatedDiags
+	}
+
+	model.DeploymentID = types.StringValue(deployment.JSON200.Id)
+	model.Status = types.StringValue(string(deployment.JSON200.Status))
+	domainElems := []attr.Value{}
+	if deployment.JSON200.Domains != nil {
+		for _, d := range *deployment.JSON200.Domains {
+			domainElems = append(domainElems, types.StringValue(d))
+		}
+	}
+	domainSet, diags := types.SetValue(basetypes.StringType{}, domainElems)
+	accumulatedDiags.Append(diags...)
+	if accumulatedDiags.HasError() {
+		return accumulatedDiags
+	}
+	model.Domains = domainSet
+	model.CreatedAt = types.StringValue(deployment.JSON200.CreatedAt.Format(time.RFC3339))
+	model.UpdatedAt = types.StringValue(deployment.JSON200.UpdatedAt.Format(time.RFC3339))
 
 	return accumulatedDiags
 }

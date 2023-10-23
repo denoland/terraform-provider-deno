@@ -20,26 +20,26 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 # .
 # ├── README.md
 # ├── components
-# │   └── Button.tsx
+# │   └── Button.tsx
 # ├── deno.json
 # ├── dev.ts
 # ├── fresh.config.ts
 # ├── fresh.gen.ts
 # ├── islands
-# │   └── Counter.tsx
+# │   └── Counter.tsx
 # ├── main.ts
 # ├── routes
-# │   ├── _404.tsx
-# │   ├── _app.tsx
-# │   ├── api
-# │   │   └── joke.ts
-# │   ├── greet
-# │   │   └── [name].tsx
-# │   └── index.tsx
+# │   ├── _404.tsx
+# │   ├── _app.tsx
+# │   ├── api
+# │   │   └── joke.ts
+# │   ├── greet
+# │   │   └── [name].tsx
+# │   └── index.tsx
 # ├── static
-# │   ├── favicon.ico
-# │   ├── logo.svg
-# │   └── styles.css
+# │   ├── favicon.ico
+# │   ├── logo.svg
+# │   └── styles.css
 # └── terraform
 #     └── main.tf
 

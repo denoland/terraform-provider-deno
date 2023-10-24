@@ -322,7 +322,7 @@ func TestAccDeployment_ConfigAutoDiscovery(t *testing.T) {
 	})
 }
 
-func TestAccDeployment_InlineAsset(t *testing.T) {
+func TestAccDeployment_InlineAsset_Utf8(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -346,6 +346,54 @@ func TestAccDeployment_InlineAsset(t *testing.T) {
 					}
 				`,
 				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+			},
+		},
+	})
+}
+
+func TestAccDeployment_InlineAsset_Base64(t *testing.T) {
+	expectedBinary, err := os.ReadFile("testdata/binary/computer_screen_programming.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = {
+							"main.ts" = {
+								kind = "file"
+								content = <<-EOT
+									Deno.serve(async () => {
+										try {
+											const image = await Deno.readFile('computer_screen_programming.png');
+											return new Response(image);
+										} catch (error) {
+											return new Response(error.message);
+										}
+									});
+								EOT
+							}
+							"computer_screen_programming.png" = {
+								kind = "file"
+								content = filebase64("testdata/binary/computer_screen_programming.png")
+								encoding = "base64"
+							}
+						}
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", expectedBinary)),
 			},
 		},
 	})

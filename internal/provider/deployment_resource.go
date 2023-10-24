@@ -41,20 +41,20 @@ type deploymentResource struct {
 
 // deploymentResourceModel maps the resource schema data.
 type deploymentResourceModel struct {
-	DeploymentID    types.String         `tfsdk:"deployment_id"`
-	ProjectID       types.String         `tfsdk:"project_id"`
-	Status          types.String         `tfsdk:"status"`
-	Domains         types.Set            `tfsdk:"domains"`
-	EntryPointURL   types.String         `tfsdk:"entry_point_url"`
-	ImportMapURL    types.String         `tfsdk:"import_map_url"`
-	LockFileURL     types.String         `tfsdk:"lock_file_url"`
-	CompilerOptions compilerOptionsModel `tfsdk:"compiler_options"`
-	Assets          types.Map            `tfsdk:"assets"`
-	UploadedAssets  types.Map            `tfsdk:"uploaded_assets"`
-	EnvVars         types.Map            `tfsdk:"env_vars"`
-	CreatedAt       types.String         `tfsdk:"created_at"`
-	UpdatedAt       types.String         `tfsdk:"updated_at"`
-	Timeouts        timeouts.Value       `tfsdk:"timeouts"`
+	DeploymentID    types.String          `tfsdk:"deployment_id"`
+	ProjectID       types.String          `tfsdk:"project_id"`
+	Status          types.String          `tfsdk:"status"`
+	Domains         types.Set             `tfsdk:"domains"`
+	EntryPointURL   types.String          `tfsdk:"entry_point_url"`
+	ImportMapURL    types.String          `tfsdk:"import_map_url"`
+	LockFileURL     types.String          `tfsdk:"lock_file_url"`
+	CompilerOptions *compilerOptionsModel `tfsdk:"compiler_options"`
+	Assets          types.Map             `tfsdk:"assets"`
+	UploadedAssets  types.Map             `tfsdk:"uploaded_assets"`
+	EnvVars         types.Map             `tfsdk:"env_vars"`
+	CreatedAt       types.String          `tfsdk:"created_at"`
+	UpdatedAt       types.String          `tfsdk:"updated_at"`
+	Timeouts        timeouts.Value        `tfsdk:"timeouts"`
 }
 
 // compilerOptionsModel maps the compiler options schema data.
@@ -462,18 +462,22 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		return accumulatedDiags
 	}
 
-	res, err := r.client.CreateDeploymentWithResponse(ctx, projectID, client.CreateDeploymentRequest{
-		Assets: assets,
-		CompilerOptions: &client.CompilerOptions{
+	var compilerOptions *client.CompilerOptions
+	if plan.CompilerOptions != nil {
+		compilerOptions = &client.CompilerOptions{
 			Jsx:                plan.CompilerOptions.JSX.ValueStringPointer(),
 			JsxFactory:         plan.CompilerOptions.JSXFactory.ValueStringPointer(),
 			JsxFragmentFactory: plan.CompilerOptions.JSXFragmentFactory.ValueStringPointer(),
 			JsxImportSource:    plan.CompilerOptions.JSXImportSource.ValueStringPointer(),
-		},
-		EntryPointUrl: plan.EntryPointURL.ValueString(),
-		EnvVars:       envVars,
-		ImportMapUrl:  plan.ImportMapURL.ValueStringPointer(),
-		LockFileUrl:   plan.LockFileURL.ValueStringPointer(),
+		}
+	}
+	res, err := r.client.CreateDeploymentWithResponse(ctx, projectID, client.CreateDeploymentRequest{
+		Assets:          assets,
+		CompilerOptions: compilerOptions,
+		EntryPointUrl:   plan.EntryPointURL.ValueString(),
+		EnvVars:         envVars,
+		ImportMapUrl:    plan.ImportMapURL.ValueStringPointer(),
+		LockFileUrl:     plan.LockFileURL.ValueStringPointer(),
 	})
 	if err != nil {
 		accumulatedDiags.AddError(

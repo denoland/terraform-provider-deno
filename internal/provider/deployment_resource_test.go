@@ -46,33 +46,31 @@ func TestAccDeployment_SingleFile(t *testing.T) {
 }
 
 func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
-	// TODO: This isn't working now. Uncomment this test case once it's resolved.
-	// Issue: https://github.com/denoland/terraform-provider-deno/issues/18
-	// Single file project without compiler_options
-	// resource.Test(t, resource.TestCase{
-	// 	PreCheck:                 func() { testAccPreCheck(t) },
-	// 	ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-	// 	CheckDestroy:             testAccDeploymentDestroy(t),
-	// 	Steps: []resource.TestStep{
-	// 		{
-	// 			Config: `
-	// 				resource "deno_project" "test" {}
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
 
-	// 				data "deno_assets" "test" {
-	// 					glob = "testdata/single-file/main.ts"
-	// 				}
+					data "deno_assets" "test" {
+						path = "testdata/single-file"
+						pattern = "main.ts"
+					}
 
-	// 				resource "deno_deployment" "test" {
-	// 					project_id = deno_project.test.id
-	// 					entry_point_url = "testdata/single-file/main.ts"
-	// 					assets = data.deno_assets.test.output
-	// 					env_vars = {}
-	// 				}
-	// 			`,
-	// 			Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
-	// 		},
-	// 	},
-	// })
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+			},
+		},
+	})
 }
 
 func TestAccDeployment_MultiFile(t *testing.T) {

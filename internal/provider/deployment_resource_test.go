@@ -399,6 +399,41 @@ func TestAccDeployment_InlineAsset_Base64(t *testing.T) {
 	})
 }
 
+func TestAccDeployment_InlineAsset_Merge(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						path = "testdata/multi-file"
+						pattern = "**/*.{ts,json}"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						# operands.json appears twice; later one takes precedence
+						assets = merge(data.deno_assets.test.output, {
+							"operands.json" = {
+								kind = "file"
+								content = "[1, 2]"
+							}
+						})
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 3"))),
+			},
+		},
+	})
+}
+
 // nolint:unparam
 func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedResponse []byte) resource.TestCheckFunc {
 	_ = getAPIClient(t)

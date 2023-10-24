@@ -39,7 +39,12 @@ func TestAccDeployment_SingleFile(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello world"),
+					},
+				})),
 			},
 		},
 	})
@@ -67,7 +72,12 @@ func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello world"),
+					},
+				})),
 			},
 		},
 	})
@@ -96,7 +106,12 @@ func TestAccDeployment_MultiFile(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 42"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("sum: 42"),
+					},
+				})),
 			},
 		},
 	})
@@ -125,7 +140,12 @@ func TestAccDeployment_Symlink(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 42"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("sum: 42"),
+					},
+				})),
 			},
 		},
 	})
@@ -158,7 +178,12 @@ func TestAccDeployment_Binary(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", expectedBinary)),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: expectedBinary,
+					},
+				})),
 			},
 		},
 	})
@@ -187,7 +212,12 @@ func TestAccDeployment_TSX(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("<h1>Hello World!</h1>"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("<h1>Hello World!</h1>"),
+					},
+				})),
 			},
 		},
 	})
@@ -217,7 +247,12 @@ func TestAccDeployment_ImportMap(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello World"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello World"),
+					},
+				})),
 			},
 		},
 	})
@@ -247,14 +282,19 @@ func TestAccDeployment_LockFile(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte(` _______
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path: "/",
+						expected: []byte(` _______
 < Hello >
  -------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
                 ||----w |
-                ||     ||`))),
+                ||     ||`),
+					},
+				})),
 			},
 		},
 	})
@@ -285,7 +325,12 @@ func TestAccDeployment_EnvVars(t *testing.T) {
 						}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello Deno"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello Deno"),
+					},
+				})),
 			},
 		},
 	})
@@ -314,7 +359,12 @@ func TestAccDeployment_ConfigAutoDiscovery(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("<h1>Hello World!</h1>"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("<h1>Hello World!</h1>"),
+					},
+				})),
 			},
 		},
 	})
@@ -343,7 +393,12 @@ func TestAccDeployment_InlineAsset_Utf8(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello world"),
+					},
+				})),
 			},
 		},
 	})
@@ -391,7 +446,12 @@ func TestAccDeployment_InlineAsset_Base64(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", expectedBinary)),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: expectedBinary,
+					},
+				})),
 			},
 		},
 	})
@@ -426,14 +486,98 @@ func TestAccDeployment_InlineAsset_Merge(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("sum: 3"))),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("sum: 3"),
+					},
+				})),
 			},
 		},
 	})
 }
 
+func TestAccDeployment_DataSourceAsset_Merge(t *testing.T) {
+	expectedBinary, err := os.ReadFile("testdata/binary/computer_screen_programming.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "image" {
+						path = "testdata/binary"
+						pattern = "*.png"
+						target = "image"
+					}
+
+					data "deno_assets" "util" {
+						path = "testdata/multi-file/util"
+						pattern = "*.ts"
+						target = "util"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = merge(
+							data.deno_assets.image.output,
+							data.deno_assets.util.output,
+							{
+								"main.ts" = {
+									kind = "file"
+									content = <<-EOT
+										import { add } from "./util/calc.ts";
+										Deno.serve(async (req) => {
+											const url = new URL(req.url);
+											if (url.pathname === "/image") {
+												try {
+													const image = await Deno.readFile('image/computer_screen_programming.png');
+													return new Response(image);
+												} catch (error) {
+													return new Response(error.message);
+												}
+											} else {
+												return new Response(add(2, 4).toString());
+											}
+										});
+									EOT
+								}
+							},
+						)
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/image",
+						expected: expectedBinary,
+					},
+					{
+						path:     "/",
+						expected: []byte("6"),
+					},
+				})),
+			},
+		},
+	})
+}
+
+type responseTest struct {
+	path     string
+	expected []byte
+}
+
 // nolint:unparam
-func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedResponse []byte) resource.TestCheckFunc {
+func testAccCheckDeploymentDomains(t *testing.T, resourceName string, responseTests []responseTest) resource.TestCheckFunc {
 	_ = getAPIClient(t)
 
 	return func(s *terraform.State) error {
@@ -460,32 +604,34 @@ func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedRe
 				return fmt.Errorf("deno_deployment resource is missing domains attribute")
 			}
 
-			resp, err := http.Get(fmt.Sprintf("https://%s", domain))
-			if err != nil {
-				return fmt.Errorf("failed to get the deployment (domain = %s): %s", domain, err)
-			}
-			defer resp.Body.Close()
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return fmt.Errorf("failed to read the response body (domain = %s): %s", domain, err)
-			}
-
-			if !bytes.Equal(body, expectedResponse) {
-				var expected string
-				if utf8.Valid(expectedResponse) {
-					expected = string(expectedResponse)
-				} else {
-					expected = base64.StdEncoding.EncodeToString(expectedResponse)
+			for _, responseTest := range responseTests {
+				resp, err := http.Get(fmt.Sprintf("https://%s%s", domain, responseTest.path))
+				if err != nil {
+					return fmt.Errorf("failed to get the deployment (domain = %s): %s", domain, err)
+				}
+				defer resp.Body.Close()
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read the response body (domain = %s): %s", domain, err)
 				}
 
-				var got string
-				if utf8.Valid(body) {
-					got = string(body)
-				} else {
-					got = base64.StdEncoding.EncodeToString(body)
-				}
+				if !bytes.Equal(body, responseTest.expected) {
+					var expected string
+					if utf8.Valid(responseTest.expected) {
+						expected = string(responseTest.expected)
+					} else {
+						expected = base64.StdEncoding.EncodeToString(responseTest.expected)
+					}
 
-				return fmt.Errorf("the response body is expected %s, but got %s (domain = %s)", expected, got, domain)
+					var got string
+					if utf8.Valid(body) {
+						got = string(body)
+					} else {
+						got = base64.StdEncoding.EncodeToString(body)
+					}
+
+					return fmt.Errorf("the response body is expected %s, but got %s (domain = %s)", expected, got, domain)
+				}
 			}
 		}
 

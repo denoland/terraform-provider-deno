@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
+	"path/filepath"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -37,29 +37,38 @@ A data source for a list of assets to be deployed.
 For how to use this data source with deno_deployment resource, please refer to the doc of deno_deployment resource.
 		`,
 		Attributes: map[string]schema.Attribute{
-			"glob": schema.StringAttribute{
+			"path": schema.StringAttribute{
 				Required:    true,
-				Description: "The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`",
+				Description: "The root directory path of the assets. e.g. `../dist`",
+			},
+			"pattern": schema.StringAttribute{
+				Required:    true,
+				Description: "The glob pattern to match the assets within the directory specified in `path`. e.g. `**/*.{js,ts,json}`",
+			},
+			"target": schema.StringAttribute{
+				Optional: true,
+				Description: `The target directory path where the assets will be put in the runtime virtual filesystem.
+For example, if "target" is set to "foo/bar", then the assets will be placed under the directory "foo/bar" in the runtime virtual filesystem.
+
+If this field is omitted, the assets will be put under the "." directory in the runtime virtual filesystem.
+				`,
 			},
 			"output": schema.MapNestedAttribute{
-				Computed: true,
+				Computed:    true,
+				Description: "The assets map, whose key is the asset path used in the runtime virtual filesystem, and the value is the asset metadata.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"kind": schema.StringAttribute{
 							Computed:    true,
 							Description: "The kind of the asset. It can be either `file` or `symlink`.",
 						},
-						"git_sha1": schema.StringAttribute{
+						"local_file_path": schema.StringAttribute{
 							Computed:    true,
-							Description: "The git object hash of the asset. It is only available for `file` asset.",
+							Description: "The file path of the asset in the local filesystem.",
 						},
-						"target": schema.StringAttribute{
+						"runtime_target_path": schema.StringAttribute{
 							Computed:    true,
-							Description: "The target path of the asset. It is only available for `symlink` asset.",
-						},
-						"updated_at": schema.StringAttribute{
-							Computed:    true,
-							Description: "The last updated time of the asset. It is only available for `file` asset.",
+							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
 						},
 					},
 				},
@@ -70,7 +79,9 @@ For how to use this data source with deno_deployment resource, please refer to t
 
 // assetsResourceModel maps the data source schema data.
 type assetsResourceModel struct {
-	AssetsGlob     types.String `tfsdk:"glob"`
+	Path           types.String `tfsdk:"path"`
+	Pattern        types.String `tfsdk:"pattern"`
+	Target         types.String `tfsdk:"target"`
 	AssetsMetadata types.Map    `tfsdk:"output"`
 }
 
@@ -84,10 +95,11 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	paths, err := doublestar.FilepathGlob(config.AssetsGlob.ValueString())
+	glob := filepath.Join(config.Path.ValueString(), config.Pattern.ValueString())
+	paths, err := doublestar.FilepathGlob(glob)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			fmt.Sprintf("Unable to Read Assets %s", config.AssetsGlob.ValueString()),
+			fmt.Sprintf("Unable to Read Assets %s", glob),
 			err.Error(),
 		)
 		return
@@ -109,15 +121,14 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 		}
 
 		value := map[string]attr.Value{
-			"kind":       types.StringNull(),
-			"git_sha1":   types.StringNull(),
-			"target":     types.StringNull(),
-			"updated_at": types.StringValue(stat.ModTime().Format(time.RFC3339Nano)),
+			"kind":                types.StringNull(),
+			"local_file_path":     types.StringValue(path),
+			"runtime_target_path": types.StringNull(),
 		}
 
 		if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
 			value["kind"] = types.StringValue("symlink")
-			linkedTo, err := os.Readlink(path)
+			linkedTo, err := filepath.EvalSymlinks(path)
 			if err != nil {
 				resp.Diagnostics.AddError(
 					fmt.Sprintf("Unable to Read Assets %s", path),
@@ -125,42 +136,47 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 				)
 				return
 			}
-			value["target"] = types.StringValue(linkedTo)
-		} else {
-			value["kind"] = types.StringValue("file")
-
-			b, err := os.ReadFile(path)
+			symlinkTargetRelpath, err := filepath.Rel(config.Path.ValueString(), linkedTo)
 			if err != nil {
 				resp.Diagnostics.AddError(
-					fmt.Sprintf("Unable to Calculate Git Object Hash for %s", path),
-					err.Error(),
+					fmt.Sprintf("Unable to Read Assets %s", path),
+					fmt.Sprintf("Failed to get the relative path of %s: %s", path, err.Error()),
 				)
 				return
 			}
-
-			value["git_sha1"] = types.StringValue(calculateGitSha1(b))
+			runtimeTargetPath := filepath.Join(config.Target.ValueString(), symlinkTargetRelpath)
+			value["runtime_target_path"] = types.StringValue(runtimeTargetPath)
+		} else {
+			value["kind"] = types.StringValue("file")
 		}
 
 		obj, diags := types.ObjectValue(map[string]attr.Type{
-			"kind":       types.StringType,
-			"git_sha1":   types.StringType,
-			"target":     types.StringType,
-			"updated_at": types.StringType,
+			"kind":                types.StringType,
+			"local_file_path":     types.StringType,
+			"runtime_target_path": types.StringType,
 		}, value)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
 		}
 
-		metadata[path] = obj
+		relpath, err := filepath.Rel(config.Path.ValueString(), path)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Unable to Read Assets %s", path),
+				fmt.Sprintf("Failed to get the relative path of %s: %s", path, err.Error()),
+			)
+			return
+		}
+		runtimeFilePath := filepath.Join(config.Target.ValueString(), relpath)
+		metadata[runtimeFilePath] = obj
 	}
 
 	assetsMetadata, diags := types.MapValue(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
-			"kind":       types.StringType,
-			"git_sha1":   types.StringType,
-			"target":     types.StringType,
-			"updated_at": types.StringType,
+			"kind":                types.StringType,
+			"local_file_path":     types.StringType,
+			"runtime_target_path": types.StringType,
 		},
 	}, metadata)
 	resp.Diagnostics.Append(diags...)

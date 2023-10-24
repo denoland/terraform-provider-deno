@@ -322,6 +322,35 @@ func TestAccDeployment_ConfigAutoDiscovery(t *testing.T) {
 	})
 }
 
+func TestAccDeployment_InlineAsset(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = {
+							"main.ts" = {
+								kind = "file"
+								content = "Deno.serve(() => new Response('Hello world'))"
+							}
+						}
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []byte("Hello world"))),
+			},
+		},
+	})
+}
+
 // nolint:unparam
 func testAccCheckDeploymentDomains(t *testing.T, resourceName string, expectedResponse []byte) resource.TestCheckFunc {
 	_ = getAPIClient(t)

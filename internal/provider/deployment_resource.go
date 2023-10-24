@@ -200,7 +200,7 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 	}
 }
 
-func prepareAssetsForUpload(ctx context.Context, plannedAssets map[string]asset) (client.Assets, diag.Diagnostic) {
+func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag.Diagnostic) {
 	assets := make(client.Assets)
 
 	for runtimePath, pa := range plannedAssets {
@@ -443,7 +443,7 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		return accumulatedDiags
 	}
 
-	assets, diag := prepareAssetsForUpload(ctx, plan.Assets)
+	assets, diag := prepareAssetsForUpload(plan.Assets)
 	accumulatedDiags.Append(diag)
 	if accumulatedDiags.HasError() {
 		return accumulatedDiags

@@ -27,12 +27,13 @@ func TestAccDeployment_SingleFile(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/single-file/main.ts"
+						path = "./testdata/single-file"
+						pattern = "main.ts"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/single-file/main.ts"
+						entry_point_url = "main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -85,12 +86,13 @@ func TestAccDeployment_MultiFile(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/multi-file/**/*.{ts,json}"
+						path = "testdata/multi-file"
+						pattern = "**/*.{ts,json}"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/multi-file/main.ts"
+						entry_point_url = "main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -113,12 +115,13 @@ func TestAccDeployment_Symlink(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/symlink/**/*.{ts,js}"
+						path = "testdata/symlink"
+						pattern = "**/*.{ts,js}"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/symlink/main.ts"
+						entry_point_url = "main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -145,12 +148,13 @@ func TestAccDeployment_Binary(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/binary/**/*.{ts,png}"
+						path = "testdata/binary"
+						pattern = "**/*.{ts,png}"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/binary/main.ts"
+						entry_point_url = "main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -173,12 +177,13 @@ func TestAccDeployment_TSX(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/tsx/main.tsx"
+						path = "testdata/tsx"
+						pattern = "main.tsx"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/tsx/main.tsx"
+						entry_point_url = "main.tsx"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -201,13 +206,14 @@ func TestAccDeployment_ImportMap(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/import_map/**/*.{ts,json}"
+						path = "testdata/import_map"
+						pattern = "**/*.{ts,json}"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/import_map/main.ts"
-						import_map_url = "testdata/import_map/import_map.json"
+						entry_point_url = "main.ts"
+						import_map_url = "import_map.json"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -230,13 +236,14 @@ func TestAccDeployment_LockFile(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/lockfile/*"
+						path = "testdata/lockfile"
+						pattern = "*"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/lockfile/main.ts"
-						lock_file_url = "testdata/lockfile/deno.lock"
+						entry_point_url = "main.ts"
+						lock_file_url = "deno.lock"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}
@@ -266,12 +273,13 @@ func TestAccDeployment_EnvVars(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/env_var/main.ts"
+						path = "testdata/env_var"
+						pattern = "main.ts"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/env_var/main.ts"
+						entry_point_url = "main.ts"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {
@@ -296,12 +304,13 @@ func TestAccDeployment_ConfigAutoDiscovery(t *testing.T) {
 					resource "deno_project" "test" {}
 
 					data "deno_assets" "test" {
-						glob = "testdata/config_auto_discovery/**/*"
+						path = "testdata/config_auto_discovery"
+						pattern = "**/*"
 					}
 
 					resource "deno_deployment" "test" {
 						project_id = deno_project.test.id
-						entry_point_url = "testdata/config_auto_discovery/main.tsx"
+						entry_point_url = "main.tsx"
 						compiler_options = {}
 						assets = data.deno_assets.test.output
 						env_vars = {}

@@ -152,7 +152,7 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 						},
 						"content": schema.StringAttribute{
 							Optional:    true,
-							Description: "The inlined content of the asset. This is valid only for `file` asset. If both `content` and `local_file_path` are specified, `content` will have higher precedence.",
+							Description: "The inlined content of the asset. This is valid only for `file` asset. If both `content` and `local_file_path` are specified, it will error out.",
 						},
 						"encoding": schema.StringAttribute{
 							Optional:    true,
@@ -208,6 +208,20 @@ func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag
 		switch kind {
 		case "file":
 			var fileContent client.FileAsset0
+
+			if pa.Content.IsNull() && pa.LocalFilePath.IsNull() {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Either `content` or `local_file_path` is required for %s", runtimePath),
+				)
+			}
+
+			if !pa.Content.IsNull() && !pa.LocalFilePath.IsNull() {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Both `content` and `local_file_path` are specified for %s. Only one of them can be specified.", runtimePath),
+				)
+			}
 
 			if pa.Content.IsNull() {
 				// no inline content found; obtain file content from the filesystem

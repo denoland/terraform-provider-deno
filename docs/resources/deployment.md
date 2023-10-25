@@ -105,7 +105,7 @@ Required:
 
 Optional:
 
-- `content` (String) The inlined content of the asset. This is valid only for `file` asset. If both `content` and `local_file_path` are specified, `content` will have higher precedence.
+- `content` (String) The inlined content of the asset. This is valid only for `file` asset. If both `content` and `local_file_path` are specified, it will error out.
 - `encoding` (String) The encoding of the inlined content. This takes effect only when `content` is present. Possible values are `utf-8` and `base64`. If omitted, the content will be interpreted as `utf-8`.
 - `local_file_path` (String) The file path of the asset in the local filesystem.
 - `runtime_target_path` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.

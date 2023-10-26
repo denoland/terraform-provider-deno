@@ -9,7 +9,7 @@ deploy organization ID and an access token. See `docs/index.md` for instructions
 on finding or creating those values.
 
 Resource and schema documentation still needs to be written. In the interim, API
-documentation is available at https://maguro-rapidoc.deno.dev/. Resources are
+documentation is available at https://apidocs.deno.com/. Resources are
 aligned with the API.
 
 If you want to build and run the provider locally, you can override where

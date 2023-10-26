@@ -589,13 +589,13 @@ func TestAccDeployment_LocalFilePathAndContentMutuallyExclusive(t *testing.T) {
 							"main.ts" = {
 								kind = "file"
 								content = "Deno.serve(() => new Response('Hello world'))"
-								local_file_path = "testdata/single-file/main.ts"
+								content_source_path = "testdata/single-file/main.ts"
 							}
 						}
 						env_vars = {}
 					}
 				`,
-				ExpectError: regexp.MustCompile("Both `content` and `local_file_path` are specified for main.ts. Only one of\nthem can be specified."),
+				ExpectError: regexp.MustCompile("Both `content` and `content_source_path` are specified for main.ts. Only one of\nthem can be specified."),
 			},
 		},
 	})
@@ -622,7 +622,7 @@ func TestAccDeployment_NeitherLocalFilePathNorContent(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				ExpectError: regexp.MustCompile("Either `content` or `local_file_path` is required for main.ts"),
+				ExpectError: regexp.MustCompile("Either `content` or `content_source_path` is required for main.ts"),
 			},
 		},
 	})

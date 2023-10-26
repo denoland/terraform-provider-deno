@@ -49,6 +49,6 @@ If this field is omitted, the assets will be put under the "." directory in the 
 
 Read-Only:
 
+- `content_source_path` (String) The file path of the asset in the local filesystem.
 - `kind` (String) The kind of the asset. It can be either `file` or `symlink`.
-- `local_file_path` (String) The file path of the asset in the local filesystem.
-- `runtime_target_path` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.
+- `target` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.

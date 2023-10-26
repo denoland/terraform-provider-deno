@@ -62,11 +62,11 @@ If this field is omitted, the assets will be put under the "." directory in the 
 							Computed:    true,
 							Description: "The kind of the asset. It can be either `file` or `symlink`.",
 						},
-						"local_file_path": schema.StringAttribute{
+						"content_source_path": schema.StringAttribute{
 							Computed:    true,
 							Description: "The file path of the asset in the local filesystem.",
 						},
-						"runtime_target_path": schema.StringAttribute{
+						"target": schema.StringAttribute{
 							Computed:    true,
 							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
 						},
@@ -122,8 +122,8 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 		value := map[string]attr.Value{
 			"kind":                types.StringNull(),
-			"local_file_path":     types.StringValue(path),
-			"runtime_target_path": types.StringNull(),
+			"content_source_path": types.StringValue(path),
+			"target":              types.StringNull(),
 		}
 
 		if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
@@ -145,15 +145,15 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 				return
 			}
 			runtimeTargetPath := filepath.Join(config.Target.ValueString(), symlinkTargetRelpath)
-			value["runtime_target_path"] = types.StringValue(runtimeTargetPath)
+			value["target"] = types.StringValue(runtimeTargetPath)
 		} else {
 			value["kind"] = types.StringValue("file")
 		}
 
 		obj, diags := types.ObjectValue(map[string]attr.Type{
 			"kind":                types.StringType,
-			"local_file_path":     types.StringType,
-			"runtime_target_path": types.StringType,
+			"content_source_path": types.StringType,
+			"target":              types.StringType,
 		}, value)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
@@ -175,8 +175,8 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 	assetsMetadata, diags := types.MapValue(types.ObjectType{
 		AttrTypes: map[string]attr.Type{
 			"kind":                types.StringType,
-			"local_file_path":     types.StringType,
-			"runtime_target_path": types.StringType,
+			"content_source_path": types.StringType,
+			"target":              types.StringType,
 		},
 	}, metadata)
 	resp.Diagnostics.Append(diags...)

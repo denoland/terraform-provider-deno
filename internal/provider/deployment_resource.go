@@ -66,8 +66,8 @@ type compilerOptionsModel struct {
 
 type asset struct {
 	Kind              types.String `tfsdk:"kind"`
-	LocalFilePath     types.String `tfsdk:"local_file_path"`
-	RuntimeTargetPath types.String `tfsdk:"runtime_target_path"`
+	LocalFilePath     types.String `tfsdk:"content_source_path"`
+	RuntimeTargetPath types.String `tfsdk:"target"`
 	Content           types.String `tfsdk:"content"`
 	Encoding          types.String `tfsdk:"encoding"`
 }
@@ -142,17 +142,17 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 							Required:    true,
 							Description: `The kind of entity: "file" or "symlink".`,
 						},
-						"local_file_path": schema.StringAttribute{
+						"content_source_path": schema.StringAttribute{
 							Optional:    true,
 							Description: "The file path of the asset in the local filesystem.",
 						},
-						"runtime_target_path": schema.StringAttribute{
+						"target": schema.StringAttribute{
 							Optional:    true,
 							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
 						},
 						"content": schema.StringAttribute{
 							Optional:    true,
-							Description: "The inlined content of the asset. This is valid only for `file` asset. If both `content` and `local_file_path` are specified, it will error out.",
+							Description: "The inlined content of the asset. This is valid only for `file` asset. If both `content` and `content_source_path` are specified, it will error out.",
 						},
 						"encoding": schema.StringAttribute{
 							Optional:    true,
@@ -212,14 +212,14 @@ func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag
 			if pa.Content.IsNull() && pa.LocalFilePath.IsNull() {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Either `content` or `local_file_path` is required for %s", runtimePath),
+					fmt.Sprintf("Either `content` or `content_source_path` is required for %s", runtimePath),
 				)
 			}
 
 			if !pa.Content.IsNull() && !pa.LocalFilePath.IsNull() {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Both `content` and `local_file_path` are specified for %s. Only one of them can be specified.", runtimePath),
+					fmt.Sprintf("Both `content` and `content_source_path` are specified for %s. Only one of them can be specified.", runtimePath),
 				)
 			}
 
@@ -281,7 +281,7 @@ func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag
 			if pa.RuntimeTargetPath.IsNull() {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("The `runtime_target_path` attribute is required for symlink asset %s", runtimePath),
+					fmt.Sprintf("The `target` attribute is required for symlink asset %s", runtimePath),
 				)
 			}
 

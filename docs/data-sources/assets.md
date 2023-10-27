@@ -20,7 +20,8 @@ For how to use this data source with deno_deployment resource, please refer to t
 # For full example, see the doc of `deno_deployment`.
 
 data "deno_assets" "my_assets" {
-  glob = "src/**/*.{ts,txt,png}"
+  path    = "src"
+  pattern = "**/*.{ts,txt,png}"
 }
 ```
 
@@ -29,18 +30,25 @@ data "deno_assets" "my_assets" {
 
 ### Required
 
-- `glob` (String) The glob pattern to match the assets to be deployed. e.g. `**/*.ts`, `**/*.{ts,tsx,json}`
+- `path` (String) The root directory path of the assets. e.g. `../dist`
+- `pattern` (String) The glob pattern to match the assets within the directory specified in `path`. e.g. `**/*.{js,ts,json}`
+
+### Optional
+
+- `target` (String) The target directory path where the assets will be put in the runtime virtual filesystem.
+For example, if "target" is set to "foo/bar", then the assets will be placed under the directory "foo/bar" in the runtime virtual filesystem.
+
+If this field is omitted, the assets will be put under the "." directory in the runtime virtual filesystem.
 
 ### Read-Only
 
-- `output` (Attributes Map) (see [below for nested schema](#nestedatt--output))
+- `output` (Attributes Map) The assets map, whose key is the asset path used in the runtime virtual filesystem, and the value is the asset metadata. (see [below for nested schema](#nestedatt--output))
 
 <a id="nestedatt--output"></a>
 ### Nested Schema for `output`
 
 Read-Only:
 
-- `git_sha1` (String) The git object hash of the asset. It is only available for `file` asset.
+- `content_source_path` (String) The file path of the asset in the local filesystem.
 - `kind` (String) The kind of the asset. It can be either `file` or `symlink`.
-- `target` (String) The target path of the asset. It is only available for `symlink` asset.
-- `updated_at` (String) The last updated time of the asset. It is only available for `file` asset.
+- `target` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.

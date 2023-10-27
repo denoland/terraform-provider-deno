@@ -595,7 +595,36 @@ func TestAccDeployment_LocalFilePathAndContentMutuallyExclusive(t *testing.T) {
 						env_vars = {}
 					}
 				`,
-				ExpectError: regexp.MustCompile("Both `content` and `content_source_path` are specified for main.ts. Only one of\nthem can be specified."),
+				ExpectError: regexp.MustCompile("Both `content` and `content_source_path` are specified for main.ts. Only one\nof them can be specified."),
+			},
+		},
+	})
+}
+
+func TestAccDeployment_LocalFilePathAndEncodingMutuallyExclusive(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						assets = {
+							"main.ts" = {
+								kind = "file"
+								encoding = "utf-8"
+								content_source_path = "testdata/single-file/main.ts"
+							}
+						}
+						env_vars = {}
+					}
+				`,
+				ExpectError: regexp.MustCompile("Both `encoding` and `content_source_path` are specified for main.ts. Only one\nof them can be specified."),
 			},
 		},
 	})

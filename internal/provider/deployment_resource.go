@@ -223,6 +223,13 @@ func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag
 				)
 			}
 
+			if !pa.Encoding.IsNull() && !pa.LocalFilePath.IsNull() {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Both `encoding` and `content_source_path` are specified for %s. Only one of them can be specified.", runtimePath),
+				)
+			}
+
 			if pa.Content.IsNull() {
 				// no inline content found; obtain file content from the filesystem
 				b, err := os.ReadFile(pa.LocalFilePath.ValueString())

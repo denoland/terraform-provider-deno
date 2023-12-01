@@ -4,6 +4,9 @@ This provider uses the Deno API to manage Deno projects, custom domains, and
 deployments. A simple example is available in examples/. This is a very early
 release of the provider. Additional documentation and examples are forthcoming.
 
+The provider is available via the Terraform registry, which is the preferred
+way to install: https://registry.terraform.io/providers/denoland/deno/latest.
+
 There are working examples in `/examples`. To use the examples, you need a Deno
 deploy organization ID and an access token. See `docs/index.md` for instructions
 on finding or creating those values.

@@ -46,14 +46,19 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 resource "deno_project" "my_project" {}
 
 data "deno_assets" "my_assets" {
-  glob = "../**/*.{ts,tsx,json,ico,svg,css}"
+  # The path to the directory that terraform will look for assets in.
+  path = ".."
+  # The glob pattern that terraform will use to retrieve assets.
+  pattern = "**/*.{ts,tsx,json,ico,svg,css}"
 }
 
 resource "deno_deployment" "example1" {
   # Project ID that the created deployment belongs to.
   project_id = deno_project.myproject.id
   # File path for the deployments' entry point.
-  entry_point_url = "../main.ts"
+  entry_point_url = "main.ts"
+  # Compiler options; this can be omitted, in which case the values from 
+  # `deno.json` will be used.
   compiler_options = {
     jsx               = "react-jsx"
     jsx_import_source = "preact"
@@ -100,9 +105,10 @@ Required:
 
 Optional:
 
-- `git_sha1` (String) The git object hash for the file. This is valid only for kind == "file".
-- `target` (String) The target file path for the symlink. This is valid only for kind == "symlink".
-- `updated_at` (String) The time the file was last updated. This is valid only for kind == "file".
+- `content` (String) The inlined content of the asset. This is valid only for `file` asset. If both `content` and `content_source_path` are specified, it will error out.
+- `content_source_path` (String) The file path of the asset in the local filesystem.
+- `encoding` (String) The encoding of the inlined content. This takes effect only when `content` is present. Possible values are `utf-8` and `base64`. If omitted, the content will be interpreted as `utf-8`.
+- `target` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.
 
 
 <a id="nestedatt--compiler_options"></a>

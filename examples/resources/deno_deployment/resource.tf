@@ -28,14 +28,19 @@
 resource "deno_project" "my_project" {}
 
 data "deno_assets" "my_assets" {
-  glob = "../**/*.{ts,tsx,json,ico,svg,css}"
+  # The path to the directory that terraform will look for assets in.
+  path = ".."
+  # The glob pattern that terraform will use to retrieve assets.
+  pattern = "**/*.{ts,tsx,json,ico,svg,css}"
 }
 
 resource "deno_deployment" "example1" {
   # Project ID that the created deployment belongs to.
   project_id = deno_project.myproject.id
   # File path for the deployments' entry point.
-  entry_point_url = "../main.ts"
+  entry_point_url = "main.ts"
+  # Compiler options; this can be omitted, in which case the values from 
+  # `deno.json` will be used.
   compiler_options = {
     jsx               = "react-jsx"
     jsx_import_source = "preact"

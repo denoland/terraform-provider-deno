@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"terraform-provider-deno/client"
 	"time"
@@ -49,7 +48,7 @@ type deploymentResourceModel struct {
 	ImportMapURL    types.String          `tfsdk:"import_map_url"`
 	LockFileURL     types.String          `tfsdk:"lock_file_url"`
 	CompilerOptions *compilerOptionsModel `tfsdk:"compiler_options"`
-	Assets          types.Map             `tfsdk:"assets"`
+	Assets          map[string]asset      `tfsdk:"assets"`
 	UploadedAssets  types.Map             `tfsdk:"uploaded_assets"`
 	EnvVars         types.Map             `tfsdk:"env_vars"`
 	CreatedAt       types.String          `tfsdk:"created_at"`
@@ -63,6 +62,14 @@ type compilerOptionsModel struct {
 	JSXFactory         types.String `tfsdk:"jsx_factory"`
 	JSXFragmentFactory types.String `tfsdk:"jsx_fragment_factory"`
 	JSXImportSource    types.String `tfsdk:"jsx_import_source"`
+}
+
+type asset struct {
+	Kind              types.String `tfsdk:"kind"`
+	LocalFilePath     types.String `tfsdk:"content_source_path"`
+	RuntimeTargetPath types.String `tfsdk:"target"`
+	Content           types.String `tfsdk:"content"`
+	Encoding          types.String `tfsdk:"encoding"`
 }
 
 // Metadata returns the resource type name.
@@ -135,17 +142,21 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 							Required:    true,
 							Description: `The kind of entity: "file" or "symlink".`,
 						},
-						"git_sha1": schema.StringAttribute{
+						"content_source_path": schema.StringAttribute{
 							Optional:    true,
-							Description: `The git object hash for the file. This is valid only for kind == "file".`,
+							Description: "The file path of the asset in the local filesystem.",
 						},
 						"target": schema.StringAttribute{
 							Optional:    true,
-							Description: `The target file path for the symlink. This is valid only for kind == "symlink".`,
+							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
 						},
-						"updated_at": schema.StringAttribute{
+						"content": schema.StringAttribute{
 							Optional:    true,
-							Description: `The time the file was last updated. This is valid only for kind == "file".`,
+							Description: "The inlined content of the asset. This is valid only for `file` asset. If both `content` and `content_source_path` are specified, it will error out.",
+						},
+						"encoding": schema.StringAttribute{
+							Optional:    true,
+							Description: "The encoding of the inlined content. This takes effect only when `content` is present. Possible values are `utf-8` and `base64`. If omitted, the content will be interpreted as `utf-8`.",
 						},
 					},
 				},
@@ -189,113 +200,117 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 	}
 }
 
-func prepareAssetsForUpload(ctx context.Context, plannedAssets types.Map) (client.Assets, diag.Diagnostic) {
-	rootPath := "."
+func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag.Diagnostic) {
 	assets := make(client.Assets)
 
-	for path, metadata := range plannedAssets.Elements() {
-		obj, ok := metadata.(types.Object)
-		if !ok {
-			return nil, diag.NewErrorDiagnostic(
-				"Unable to Create Deployment",
-				fmt.Sprintf("Could not parse asset metadata for %s", path),
-			)
-		}
-		metadataValues := obj.Attributes()
-
-		relpath, err := filepath.Rel(rootPath, path)
-		if err != nil {
-			return nil, diag.NewErrorDiagnostic(
-				"Unable to Create Deployment",
-				fmt.Sprintf("Could not get file path relative to the current directory. target: %s", path),
-			)
-		}
-
-		kind, ok := metadataValues["kind"].(types.String)
-		if !ok {
-			return nil, diag.NewErrorDiagnostic(
-				"Unable to Create Deployment",
-				fmt.Sprintf("Could not parse asset kind for %s. Expected string, but got %s", path, metadataValues["kind"].Type(ctx)),
-			)
-		}
-
-		switch kind.ValueString() {
+	for runtimePath, pa := range plannedAssets {
+		kind := pa.Kind.ValueString()
+		switch kind {
 		case "file":
-			b, err := os.ReadFile(path)
-			if err != nil {
+			var fileContent client.FileAsset0
+
+			if pa.Content.IsNull() && pa.LocalFilePath.IsNull() {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Could not read file content for %s", path),
+					fmt.Sprintf("Either `content` or `content_source_path` is required for %s", runtimePath),
 				)
 			}
-			var fileAsset client.FileAsset
-			var fileContent client.FileAsset0
-			if utf8.Valid(b) {
-				enc := client.Utf8
-				fileContent = client.FileAsset0{
-					Content:  string(b),
-					Encoding: &enc,
+
+			if !pa.Content.IsNull() && !pa.LocalFilePath.IsNull() {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Both `content` and `content_source_path` are specified for %s. Only one of them can be specified.", runtimePath),
+				)
+			}
+
+			if !pa.Encoding.IsNull() && !pa.LocalFilePath.IsNull() {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Both `encoding` and `content_source_path` are specified for %s. Only one of them can be specified.", runtimePath),
+				)
+			}
+
+			if pa.Content.IsNull() {
+				// no inline content found; obtain file content from the filesystem
+				b, err := os.ReadFile(pa.LocalFilePath.ValueString())
+				if err != nil {
+					return nil, diag.NewErrorDiagnostic(
+						"Unable to Create Deployment",
+						fmt.Sprintf("Could not read file content for %s", pa.LocalFilePath),
+					)
+				}
+
+				if utf8.Valid(b) {
+					enc := client.Utf8
+					fileContent = client.FileAsset0{
+						Content:  string(b),
+						Encoding: &enc,
+					}
+				} else {
+					enc := client.Base64
+					fileContent = client.FileAsset0{
+						Content:  base64.StdEncoding.EncodeToString(b),
+						Encoding: &enc,
+					}
 				}
 			} else {
-				enc := client.Base64
+				// content is inlined
+				enc := client.Utf8
+				if pa.Encoding.ValueString() == "base64" {
+					enc = client.Base64
+				}
 				fileContent = client.FileAsset0{
-					Content:  base64.StdEncoding.EncodeToString(b),
+					Content:  pa.Content.ValueString(),
 					Encoding: &enc,
 				}
 			}
 
-			err = fileAsset.FromFileAsset0(fileContent)
+			var fileAsset client.FileAsset
+			err := fileAsset.FromFileAsset0(fileContent)
 			if err != nil {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Internal error happened for %s on FromFileAsset0", path),
-				)
-			}
-			var asset client.Asset
-			err = asset.FromFileAsset(fileAsset)
-			if err != nil {
-				return nil, diag.NewErrorDiagnostic(
-					"Unable to Create Deployment",
-					fmt.Sprintf("Internal error happened for %s on FromFileAsset", path),
+					fmt.Sprintf("Internal error happened for %s on FromFileAsset0", runtimePath),
 				)
 			}
 
-			assets[encodePath(relpath)] = asset
+			var ca client.Asset
+			err = ca.FromFileAsset(fileAsset)
+			if err != nil {
+				return nil, diag.NewErrorDiagnostic(
+					"Unable to Create Deployment",
+					fmt.Sprintf("Internal error happened for %s on FromFileAsset", runtimePath),
+				)
+			}
+
+			assets[runtimePath] = ca
 		case "symlink":
-			targetPath, ok := metadataValues["target"].(types.String)
-			if !ok {
+			if pa.RuntimeTargetPath.IsNull() {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Could not parse target path for %s. Expected string, but got %s", path, metadataValues["target"].Type(ctx)),
+					fmt.Sprintf("The `target` attribute is required for symlink asset %s", runtimePath),
 				)
 			}
 
-			targetRel, err := filepath.Rel(rootPath, targetPath.ValueString())
-			if err != nil {
-				return nil, diag.NewErrorDiagnostic(
-					"Unable to Create Deployment",
-					fmt.Sprintf("Could not get file path relative to the current directory. target: %s", targetPath),
-				)
-			}
 			symlinkAsset := client.SymlinkAsset{
-				Target: encodePath(targetRel),
+				Target: pa.RuntimeTargetPath.ValueString(),
 				Kind:   client.SymlinkAssetKindSymlink,
 			}
 
-			var asset client.Asset
-			err = asset.FromSymlinkAsset(symlinkAsset)
+			var ca client.Asset
+			err := ca.FromSymlinkAsset(symlinkAsset)
 			if err != nil {
 				return nil, diag.NewErrorDiagnostic(
 					"Unable to Create Deployment",
-					fmt.Sprintf("Internal error happened for %s on FromSymlinkAsset", path),
+					fmt.Sprintf("Internal error happened for %s on FromSymlinkAsset", runtimePath),
 				)
 			}
 
-			assets[encodePath(relpath)] = asset
+			assets[runtimePath] = ca
 		default:
 			return nil, diag.NewErrorDiagnostic(
 				"Unable to Create Deployment",
-				fmt.Sprintf("Invalid asset kind %s is found for %s. Valid kinds are `file`, `symlink`", kind.ValueString(), path),
+				fmt.Sprintf("Invalid asset kind %s is found for %s. Valid kinds are `file`, `symlink`", kind, runtimePath),
 			)
 		}
 	}
@@ -449,7 +464,7 @@ func (r *deploymentResource) doDeployment(ctx context.Context, plan *deploymentR
 		return accumulatedDiags
 	}
 
-	assets, diag := prepareAssetsForUpload(ctx, plan.Assets)
+	assets, diag := prepareAssetsForUpload(plan.Assets)
 	accumulatedDiags.Append(diag)
 	if accumulatedDiags.HasError() {
 		return accumulatedDiags

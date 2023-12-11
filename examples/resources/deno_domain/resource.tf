@@ -21,29 +21,13 @@ resource "deno_domain" "example" {
 }
 
 # Add DNS records to the nameserver.
-resource "cloudflare_record" "my_record_0" {
-  zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[0].name
-  type    = upper(deno_domain.example.dns_records[0].type)
-  value   = deno_domain.example.dns_records[0].content
-  proxied = false
-  ttl     = 120
-}
+resource "cloudflare_record" "my_record" {
+  for_each = deno_domain.example.dns_records_map
 
-resource "cloudflare_record" "my_record_1" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[1].name
-  type    = upper(deno_domain.example.dns_records[1].type)
-  value   = deno_domain.example.dns_records[1].content
-  proxied = false
-  ttl     = 120
-}
-
-resource "cloudflare_record" "my_record_2" {
-  zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[2].name
-  type    = upper(deno_domain.example.dns_records[2].type)
-  value   = deno_domain.example.dns_records[2].content
+  name    = each.value.name
+  type    = upper(each.key)
+  value   = each.value.content
   proxied = false
   ttl     = 120
 }

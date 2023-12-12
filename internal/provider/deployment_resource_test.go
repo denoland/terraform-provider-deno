@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
@@ -77,40 +78,6 @@ func TestAccDeployment_SingleFileWithoutCompilerOptions(t *testing.T) {
 					{
 						path:     "/",
 						expected: []byte("Hello world"),
-					},
-				})),
-			},
-		},
-	})
-}
-
-func TestAccDeployment_MultiFile(t *testing.T) {
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testAccDeploymentDestroy(t),
-		Steps: []resource.TestStep{
-			{
-				Config: `
-					resource "deno_project" "test" {}
-
-					data "deno_assets" "test" {
-						path = "testdata/multi-file"
-						pattern = "**/*.{ts,json}"
-					}
-
-					resource "deno_deployment" "test" {
-						project_id = deno_project.test.id
-						entry_point_url = "main.ts"
-						compiler_options = {}
-						assets = data.deno_assets.test.output
-						env_vars = {}
-					}
-				`,
-				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
-					{
-						path:     "/",
-						expected: []byte("sum: 42"),
 					},
 				})),
 			},
@@ -710,6 +677,82 @@ func TestAccDeployment_NeitherLocalFilePathNorContent(t *testing.T) {
 					}
 				`,
 				ExpectError: regexp.MustCompile("Either `content` or `content_source_path` is required for main.ts"),
+			},
+		},
+	})
+}
+
+func TestAccDeployment_ChangeFileAfterFirstDeployment(t *testing.T) {
+	dir, err := os.MkdirTemp("", "TestAccDeployment_ChangeFileAfterFirstDeployment")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dir)
+
+	entryPointFilePath := filepath.Join(dir, "main.ts")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					if err = os.WriteFile(entryPointFilePath, []byte("Deno.serve(() => new Response('Hello world'))"), 0644); err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: fmt.Sprintf(`
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						path = "%s"
+						pattern = "*.ts"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`, dir),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello world"),
+					},
+				})),
+			},
+			{
+				PreConfig: func() {
+					if err = os.WriteFile(entryPointFilePath, []byte("Deno.serve(() => new Response('Updated!'))"), 0644); err != nil {
+						t.Fatal(err)
+					}
+				},
+				Config: fmt.Sprintf(`
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						path = "%s"
+						pattern = "*.ts"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`, dir),
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Updated!"),
+					},
+				})),
 			},
 		},
 	})

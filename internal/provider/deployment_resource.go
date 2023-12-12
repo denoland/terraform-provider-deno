@@ -68,6 +68,7 @@ type asset struct {
 	Kind              types.String `tfsdk:"kind"`
 	LocalFilePath     types.String `tfsdk:"content_source_path"`
 	RuntimeTargetPath types.String `tfsdk:"target"`
+	GitSHA1           types.String `tfsdk:"git_sha1"`
 	Content           types.String `tfsdk:"content"`
 	Encoding          types.String `tfsdk:"encoding"`
 }
@@ -149,6 +150,10 @@ A deployment belongs to a project, is an immutable, invokable snapshot of the pr
 						"target": schema.StringAttribute{
 							Optional:    true,
 							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
+						},
+						"git_sha1": schema.StringAttribute{
+							Optional:    true,
+							Description: "The git SHA1 of the asset. It is only available for `file` asset.",
 						},
 						"content": schema.StringAttribute{
 							Optional:    true,
@@ -238,6 +243,19 @@ func prepareAssetsForUpload(plannedAssets map[string]asset) (client.Assets, diag
 						"Unable to Create Deployment",
 						fmt.Sprintf("Could not read file content for %s", pa.LocalFilePath),
 					)
+				}
+
+				if !pa.GitSHA1.IsNull() {
+					// Expected git SHA1 is provided; verify that it matches the
+					// actual content
+					expected := pa.GitSHA1.ValueString()
+					actual := calculateGitSha1(b)
+					if expected != actual {
+						return nil, diag.NewErrorDiagnostic(
+							"Unable to Create Deployment",
+							fmt.Sprintf("The git SHA1 of the file content for %s does not match the expected value. Expected: %s, Actual: %s", pa.LocalFilePath, expected, actual),
+						)
+					}
 				}
 
 				if utf8.Valid(b) {

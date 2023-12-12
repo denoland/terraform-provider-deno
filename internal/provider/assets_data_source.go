@@ -70,6 +70,10 @@ If this field is omitted, the assets will be put under the "." directory in the 
 							Computed:    true,
 							Description: "The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.",
 						},
+						"git_sha1": schema.StringAttribute{
+							Computed:    true,
+							Description: "The git SHA1 of the asset. It is only available for `file` asset.",
+						},
 					},
 				},
 			},
@@ -124,6 +128,7 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":                types.StringNull(),
 			"content_source_path": types.StringValue(path),
 			"target":              types.StringNull(),
+			"git_sha1":            types.StringNull(),
 		}
 
 		if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
@@ -148,12 +153,22 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			value["target"] = types.StringValue(runtimeTargetPath)
 		} else {
 			value["kind"] = types.StringValue("file")
+			b, err := os.ReadFile(path)
+			if err != nil {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Unable to Read Assets %s", path),
+					fmt.Sprintf("Failed to read the content of %s: %s", path, err.Error()),
+				)
+				return
+			}
+			value["git_sha1"] = types.StringValue(calculateGitSha1(b))
 		}
 
 		obj, diags := types.ObjectValue(map[string]attr.Type{
 			"kind":                types.StringType,
 			"content_source_path": types.StringType,
 			"target":              types.StringType,
+			"git_sha1":            types.StringType,
 		}, value)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
@@ -177,6 +192,7 @@ func (d *assetsResource) Read(ctx context.Context, req datasource.ReadRequest, r
 			"kind":                types.StringType,
 			"content_source_path": types.StringType,
 			"target":              types.StringType,
+			"git_sha1":            types.StringType,
 		},
 	}, metadata)
 	resp.Diagnostics.Append(diags...)

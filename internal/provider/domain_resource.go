@@ -47,12 +47,6 @@ type domainResourceModel struct {
 	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
-// dnsRecord represents a single DNS record.
-type dnsRecord struct {
-	Name    types.String `tfsdk:"name"`
-	Content types.String `tfsdk:"content"`
-}
-
 // Metadata returns the resource type name.
 func (r *domainResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_domain"
@@ -69,15 +63,15 @@ In order to associate a custom domain with a deployment, you need to verify the 
 		`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed:    true,
 				Description: "The ID of the domain.",
 			},
 			"domain": schema.StringAttribute{
 				Required:    true,
 				Description: "The custom domain, such as `foo.example.com`",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"token": schema.StringAttribute{
 				Computed:    true,
@@ -147,10 +141,7 @@ In order to associate a custom domain with a deployment, you need to verify the 
 				},
 			},
 			"created_at": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed:            true,
 				Description:         "The time the domain was created, formmatting in RFC3339.",
 				MarkdownDescription: "The time the domain was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},

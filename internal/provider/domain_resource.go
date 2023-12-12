@@ -36,20 +36,15 @@ type domainResource struct {
 
 // domainResourceModel maps the resource schema data.
 type domainResourceModel struct {
-	ID            types.String   `tfsdk:"id"`
-	Domain        types.String   `tfsdk:"domain"`
-	Token         types.String   `tfsdk:"token"`
-	DNSRecords    types.List     `tfsdk:"dns_records"`
-	DNSRecordsMap *dnsRecordsMap `tfsfk:"dns_records_map"`
-	CreatedAt     types.String   `tfsdk:"created_at"`
-	UpdatedAt     types.String   `tfsdk:"updated_at"`
-}
-
-// dnsRecordsMap represents A, AAAA, and CNAME records to be configured.
-type dnsRecordsMap struct {
-	A     dnsRecord `tfsdk:"a"`
-	AAAA  dnsRecord `tfsdk:"aaaa"`
-	CNAME dnsRecord `tfsdk:"cname"`
+	ID             types.String `tfsdk:"id"`
+	Domain         types.String `tfsdk:"domain"`
+	Token          types.String `tfsdk:"token"`
+	DNSRecords     types.List   `tfsdk:"dns_records"`
+	DNSRecordA     types.Object `tfsdk:"dns_record_a"`
+	DNSRecordAAAA  types.Object `tfsdk:"dns_record_aaaa"`
+	DNSRecordCNAME types.Object `tfsdk:"dns_record_cname"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 // dnsRecord represents a single DNS record.
@@ -88,55 +83,10 @@ In order to associate a custom domain with a deployment, you need to verify the 
 				Computed:    true,
 				Description: "The token used for verifying the ownership of the domain.",
 			},
-			"dns_records_map": schema.SingleNestedAttribute{
-				Computed:    true,
-				Description: "The DNS records that need to be added to the DNS nameserver.",
-				Attributes: map[string]schema.Attribute{
-					"a": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"name": schema.StringAttribute{
-								Computed:    true,
-								Description: "The name of the DNS record.",
-							},
-							"content": schema.StringAttribute{
-								Computed:    true,
-								Description: "The content of the DNS record.",
-							},
-						},
-					},
-					"aaaa": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"name": schema.StringAttribute{
-								Computed:    true,
-								Description: "The name of the DNS record.",
-							},
-							"content": schema.StringAttribute{
-								Computed:    true,
-								Description: "The content of the DNS record.",
-							},
-						},
-					},
-					"cname": schema.SingleNestedAttribute{
-						Computed: true,
-						Attributes: map[string]schema.Attribute{
-							"name": schema.StringAttribute{
-								Computed:    true,
-								Description: "The name of the DNS record.",
-							},
-							"content": schema.StringAttribute{
-								Computed:    true,
-								Description: "The content of the DNS record.",
-							},
-						},
-					},
-				},
-			},
 			"dns_records": schema.ListNestedAttribute{
 				Computed:           true,
 				Description:        "The DNS records that need to be added to the DNS nameserver.",
-				DeprecationMessage: "This attribute is deprecated. Please use `dns_records_map` instead.",
+				DeprecationMessage: "This attribute is deprecated. Please use `dns_record_a`, `dns_record_aaaa`, and `dns_record_cname` instead.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
@@ -151,6 +101,48 @@ In order to associate a custom domain with a deployment, you need to verify the 
 							Computed:    true,
 							Description: "The content of the DNS record. The value depends on the type of the DNS record. For example, for `A` record, it is the IP address of the domain.",
 						},
+					},
+				},
+			},
+			"dns_record_a": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `A` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
+					},
+				},
+			},
+			"dns_record_aaaa": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `AAAA` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
+					},
+				},
+			},
+			"dns_record_cname": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `CNAME` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
 					},
 				},
 			},
@@ -219,7 +211,9 @@ func (r *domainResource) Create(ctx context.Context, req resource.CreateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	plan.DNSRecordsMap = &dnsRecordsMap
+	plan.DNSRecordA = dnsRecordsMap.a
+	plan.DNSRecordAAAA = dnsRecordsMap.aaaa
+	plan.DNSRecordCNAME = dnsRecordsMap.cname
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
@@ -261,27 +255,38 @@ func convertToDNSRecordsList(dnsRecords []client.DnsRecord) (types.List, diag.Di
 	return dnsRecordsList, nil
 }
 
+type dnsRecordsMap struct {
+	a     types.Object
+	aaaa  types.Object
+	cname types.Object
+}
+
 func convertToDNSRecordsMap(dnsRecords []client.DnsRecord) (dnsRecordsMap, diag.Diagnostics) {
-	var a *dnsRecord
-	var aaaa *dnsRecord
-	var cname *dnsRecord
+	type dnsRecordInternal struct {
+		name    string
+		content string
+	}
+
+	var a *dnsRecordInternal
+	var aaaa *dnsRecordInternal
+	var cname *dnsRecordInternal
 
 	for _, record := range dnsRecords {
 		switch record.Type {
 		case "A":
-			a = &dnsRecord{
-				Name:    types.StringValue(record.Name),
-				Content: types.StringValue(record.Content),
+			a = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
 			}
 		case "AAAA":
-			aaaa = &dnsRecord{
-				Name:    types.StringValue(record.Name),
-				Content: types.StringValue(record.Content),
+			aaaa = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
 			}
 		case "CNAME":
-			cname = &dnsRecord{
-				Name:    types.StringValue(record.Name),
-				Content: types.StringValue(record.Content),
+			cname = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
 			}
 		}
 	}
@@ -303,10 +308,42 @@ func convertToDNSRecordsMap(dnsRecords []client.DnsRecord) (dnsRecordsMap, diag.
 		return dnsRecordsMap{}, diags
 	}
 
+	recordInfoType := map[string]attr.Type{
+		"name":    types.StringType,
+		"content": types.StringType,
+	}
+
+	aRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(a.name),
+		"content": types.StringValue(a.content),
+	}
+	aObjectValue, diags := types.ObjectValue(recordInfoType, aRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
+	aaaaRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(aaaa.name),
+		"content": types.StringValue(aaaa.content),
+	}
+	aaaaObjectValue, diags := types.ObjectValue(recordInfoType, aaaaRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
+	cnameRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(cname.name),
+		"content": types.StringValue(cname.content),
+	}
+	cnameObjectValue, diags := types.ObjectValue(recordInfoType, cnameRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
 	return dnsRecordsMap{
-		A:     *a,
-		AAAA:  *aaaa,
-		CNAME: *cname,
+		a:     aObjectValue,
+		aaaa:  aaaaObjectValue,
+		cname: cnameObjectValue,
 	}, nil
 }
 
@@ -365,7 +402,9 @@ func (r *domainResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.DNSRecordsMap = &dnsRecordsMap
+	state.DNSRecordA = dnsRecordsMap.a
+	state.DNSRecordAAAA = dnsRecordsMap.aaaa
+	state.DNSRecordCNAME = dnsRecordsMap.cname
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -450,7 +489,9 @@ func (r *domainResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	plan.DNSRecordsMap = &dnsRecordsMap
+	plan.DNSRecordA = dnsRecordsMap.a
+	plan.DNSRecordAAAA = dnsRecordsMap.aaaa
+	plan.DNSRecordCNAME = dnsRecordsMap.cname
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)

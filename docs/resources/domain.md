@@ -41,20 +41,36 @@ resource "deno_domain" "example" {
 }
 
 # Add DNS records to the nameserver.
-resource "cloudflare_record" "my_record" {
-  for_each = deno_domain.example.dns_records_map
-
+resource "cloudflare_record" "a" {
   zone_id = "<put your zone ID>"
-  name    = each.value.name
-  type    = upper(each.key)
-  value   = each.value.content
+  name    = deno_domain.example.dns_record_a.name
+  type    = "A"
+  value   = deno_domain.example.dns_record_a.content
+  proxied = false
+  ttl     = 120
+}
+
+resource "cloudflare_record" "aaaa" {
+  zone_id = "<put your zone ID>"
+  name    = deno_domain.example.dns_record_aaaa.name
+  type    = "AAAA"
+  value   = deno_domain.example.dns_record_aaaa.content
+  proxied = false
+  ttl     = 120
+}
+
+resource "cloudflare_record" "cname" {
+  zone_id = "<put your zone ID>"
+  name    = deno_domain.example.dns_record_cname.name
+  type    = "CNAME"
+  value   = deno_domain.example.dns_record_cname.content
   proxied = false
   ttl     = 120
 }
 
 # Added custom domain needs to be verified for ownership.
 resource "deno_domain_verification" "example" {
-  depends_on = [cloudflare_record.my_record_0, cloudflare_record.my_record_1, cloudflare_record.my_record_2]
+  depends_on = [cloudflare_record.a, cloudflare_record.aaaa, cloudflare_record.cname]
 
   domain_id = deno_domain.example.id
 
@@ -82,11 +98,40 @@ resource "deno_domain_certificate" "example" {
 ### Read-Only
 
 - `created_at` (String) The time the domain was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
+- `dns_record_a` (Attributes) The `A` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_a))
+- `dns_record_aaaa` (Attributes) The `AAAA` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_aaaa))
+- `dns_record_cname` (Attributes) The `CNAME` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_cname))
 - `dns_records` (Attributes List, Deprecated) The DNS records that need to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_records))
-- `dns_records_map` (Attributes) The DNS records that need to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_records_map))
 - `id` (String) The ID of the domain.
 - `token` (String) The token used for verifying the ownership of the domain.
 - `updated_at` (String) The time the domain was updated, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
+
+<a id="nestedatt--dns_record_a"></a>
+### Nested Schema for `dns_record_a`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
+
+<a id="nestedatt--dns_record_aaaa"></a>
+### Nested Schema for `dns_record_aaaa`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
+
+<a id="nestedatt--dns_record_cname"></a>
+### Nested Schema for `dns_record_cname`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
 
 <a id="nestedatt--dns_records"></a>
 ### Nested Schema for `dns_records`
@@ -96,39 +141,3 @@ Read-Only:
 - `content` (String) The content of the DNS record. The value depends on the type of the DNS record. For example, for `A` record, it is the IP address of the domain.
 - `name` (String) The name of the DNS record.
 - `type` (String) The type of the DNS record such as `A`, `CNAME`, etc.
-
-
-<a id="nestedatt--dns_records_map"></a>
-### Nested Schema for `dns_records_map`
-
-Read-Only:
-
-- `a` (Attributes) (see [below for nested schema](#nestedatt--dns_records_map--a))
-- `aaaa` (Attributes) (see [below for nested schema](#nestedatt--dns_records_map--aaaa))
-- `cname` (Attributes) (see [below for nested schema](#nestedatt--dns_records_map--cname))
-
-<a id="nestedatt--dns_records_map--a"></a>
-### Nested Schema for `dns_records_map.a`
-
-Read-Only:
-
-- `content` (String) The content of the DNS record.
-- `name` (String) The name of the DNS record.
-
-
-<a id="nestedatt--dns_records_map--aaaa"></a>
-### Nested Schema for `dns_records_map.aaaa`
-
-Read-Only:
-
-- `content` (String) The content of the DNS record.
-- `name` (String) The name of the DNS record.
-
-
-<a id="nestedatt--dns_records_map--cname"></a>
-### Nested Schema for `dns_records_map.cname`
-
-Read-Only:
-
-- `content` (String) The content of the DNS record.
-- `name` (String) The name of the DNS record.

@@ -118,6 +118,64 @@ func TestAccDeployment_MultiFile(t *testing.T) {
 	})
 }
 
+func TestAccDeployment_TwoDeployments(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testAccDeploymentDestroy(t),
+		Steps: []resource.TestStep{
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						path = "./testdata/single-file"
+						pattern = "main.ts"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("Hello world"),
+					},
+				})),
+			},
+			{
+				Config: `
+					resource "deno_project" "test" {}
+
+					data "deno_assets" "test" {
+						path = "testdata/multi-file"
+						pattern = "**/*.{ts,json}"
+					}
+
+					resource "deno_deployment" "test" {
+						project_id = deno_project.test.id
+						entry_point_url = "main.ts"
+						compiler_options = {}
+						assets = data.deno_assets.test.output
+						env_vars = {}
+					}
+				`,
+				Check: resource.ComposeTestCheckFunc(testAccCheckDeploymentDomains(t, "deno_deployment.test", []responseTest{
+					{
+						path:     "/",
+						expected: []byte("sum: 42"),
+					},
+				})),
+			},
+		},
+	})
+}
+
 func TestAccDeployment_Symlink(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

@@ -37,30 +37,6 @@ func genConfigWithSubdomain(subdomain string) string {
 		resource "deno_domain" "test" {
 			domain = "%s.deno-staging.com"
 		}
-
-		resource "terraform_data" "a" {
-			input = {
-				type    = "A"
-				name    = deno_domain.test.dns_record_a.name
-				content = deno_domain.test.dns_record_a.content
-			}
-		}
-
-		resource "terraform_data" "aaaa" {
-			input = {
-				type    = "AAAA"
-				name    = deno_domain.test.dns_record_aaaa.name
-				content = deno_domain.test.dns_record_aaaa.content
-			}
-		}
-
-		resource "terraform_data" "cname" {
-			input = {
-				type    = "CNAME"
-				name    = deno_domain.test.dns_record_cname.name
-				content = deno_domain.test.dns_record_cname.content
-			}
-		}
 	`, subdomain)
 }
 

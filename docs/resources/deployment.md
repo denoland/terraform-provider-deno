@@ -108,6 +108,7 @@ Optional:
 - `content` (String) The inlined content of the asset. This is valid only for `file` asset. If both `content` and `content_source_path` are specified, it will error out.
 - `content_source_path` (String) The file path of the asset in the local filesystem.
 - `encoding` (String) The encoding of the inlined content. This takes effect only when `content` is present. Possible values are `utf-8` and `base64`. If omitted, the content will be interpreted as `utf-8`.
+- `git_sha1` (String) The git SHA1 of the asset. It is only available for `file` asset.
 - `target` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.
 
 

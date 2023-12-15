@@ -50,5 +50,6 @@ If this field is omitted, the assets will be put under the "." directory in the 
 Read-Only:
 
 - `content_source_path` (String) The file path of the asset in the local filesystem.
+- `git_sha1` (String) The git SHA1 of the asset. It is only available for `file` asset.
 - `kind` (String) The kind of the asset. It can be either `file` or `symlink`.
 - `target` (String) The target file path of the symlink in the the runtime virtual filesystem. It is only available for `symlink` asset.

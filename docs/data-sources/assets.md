@@ -4,7 +4,7 @@ page_title: "deno_assets Data Source - terraform-provider-deno"
 subcategory: ""
 description: |-
   A data source for a list of assets to be deployed.
-  For how to use this data source with denodeployment resource, please refer to the doc of denodeployment resource.
+  For how to use this data source with deno_deployment resource, please refer to the doc of deno_deployment resource.
 ---
 
 # deno_assets (Data Source)

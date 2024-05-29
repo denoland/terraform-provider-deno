@@ -41,36 +41,36 @@ resource "deno_domain" "example" {
 }
 
 # Add DNS records to the nameserver.
-resource "cloudflare_record" "my_record_0" {
+resource "cloudflare_record" "a" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[0].name
-  type    = upper(deno_domain.example.dns_records[0].type)
-  value   = deno_domain.example.dns_records[0].content
+  name    = deno_domain.example.dns_record_a.name
+  type    = "A"
+  value   = deno_domain.example.dns_record_a.content
   proxied = false
   ttl     = 120
 }
 
-resource "cloudflare_record" "my_record_1" {
+resource "cloudflare_record" "aaaa" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[1].name
-  type    = upper(deno_domain.example.dns_records[1].type)
-  value   = deno_domain.example.dns_records[1].content
+  name    = deno_domain.example.dns_record_aaaa.name
+  type    = "AAAA"
+  value   = deno_domain.example.dns_record_aaaa.content
   proxied = false
   ttl     = 120
 }
 
-resource "cloudflare_record" "my_record_2" {
+resource "cloudflare_record" "cname" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[2].name
-  type    = upper(deno_domain.example.dns_records[2].type)
-  value   = deno_domain.example.dns_records[2].content
+  name    = deno_domain.example.dns_record_cname.name
+  type    = "CNAME"
+  value   = deno_domain.example.dns_record_cname.content
   proxied = false
   ttl     = 120
 }
 
 # Added custom domain needs to be verified for ownership.
 resource "deno_domain_verification" "example" {
-  depends_on = [cloudflare_record.my_record_0, cloudflare_record.my_record_1, cloudflare_record.my_record_2]
+  depends_on = [cloudflare_record.a, cloudflare_record.aaaa, cloudflare_record.cname]
 
   domain_id = deno_domain.example.id
 
@@ -98,10 +98,40 @@ resource "deno_domain_certificate" "example" {
 ### Read-Only
 
 - `created_at` (String) The time the domain was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
-- `dns_records` (Attributes List) The DNS records that need to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_records))
+- `dns_record_a` (Attributes) The `A` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_a))
+- `dns_record_aaaa` (Attributes) The `AAAA` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_aaaa))
+- `dns_record_cname` (Attributes) The `CNAME` DNS record that needs to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_record_cname))
+- `dns_records` (Attributes List, Deprecated) The DNS records that need to be added to the DNS nameserver. (see [below for nested schema](#nestedatt--dns_records))
 - `id` (String) The ID of the domain.
 - `token` (String) The token used for verifying the ownership of the domain.
 - `updated_at` (String) The time the domain was updated, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).
+
+<a id="nestedatt--dns_record_a"></a>
+### Nested Schema for `dns_record_a`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
+
+<a id="nestedatt--dns_record_aaaa"></a>
+### Nested Schema for `dns_record_aaaa`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
+
+<a id="nestedatt--dns_record_cname"></a>
+### Nested Schema for `dns_record_cname`
+
+Read-Only:
+
+- `content` (String) The content of the DNS record.
+- `name` (String) The name of the DNS record.
+
 
 <a id="nestedatt--dns_records"></a>
 ### Nested Schema for `dns_records`

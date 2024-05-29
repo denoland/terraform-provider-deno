@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"strings"
 	"terraform-provider-deno/client"
 	"time"
 
@@ -35,12 +36,15 @@ type domainResource struct {
 
 // domainResourceModel maps the resource schema data.
 type domainResourceModel struct {
-	ID         types.String `tfsdk:"id"`
-	Domain     types.String `tfsdk:"domain"`
-	Token      types.String `tfsdk:"token"`
-	DNSRecords types.List   `tfsdk:"dns_records"`
-	CreatedAt  types.String `tfsdk:"created_at"`
-	UpdatedAt  types.String `tfsdk:"updated_at"`
+	ID             types.String `tfsdk:"id"`
+	Domain         types.String `tfsdk:"domain"`
+	Token          types.String `tfsdk:"token"`
+	DNSRecords     types.List   `tfsdk:"dns_records"`
+	DNSRecordA     types.Object `tfsdk:"dns_record_a"`
+	DNSRecordAAAA  types.Object `tfsdk:"dns_record_aaaa"`
+	DNSRecordCNAME types.Object `tfsdk:"dns_record_cname"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 // Metadata returns the resource type name.
@@ -59,23 +63,24 @@ In order to associate a custom domain with a deployment, you need to verify the 
 		`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed:    true,
 				Description: "The ID of the domain.",
 			},
 			"domain": schema.StringAttribute{
 				Required:    true,
 				Description: "The custom domain, such as `foo.example.com`",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"token": schema.StringAttribute{
 				Computed:    true,
 				Description: "The token used for verifying the ownership of the domain.",
 			},
 			"dns_records": schema.ListNestedAttribute{
-				Computed:    true,
-				Description: "The DNS records that need to be added to the DNS nameserver.",
+				Computed:           true,
+				Description:        "The DNS records that need to be added to the DNS nameserver.",
+				DeprecationMessage: "This attribute is deprecated. Please use `dns_record_a`, `dns_record_aaaa`, and `dns_record_cname` instead.",
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
@@ -93,11 +98,50 @@ In order to associate a custom domain with a deployment, you need to verify the 
 					},
 				},
 			},
-			"created_at": schema.StringAttribute{
-				Computed: true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+			"dns_record_a": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `A` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
+					},
 				},
+			},
+			"dns_record_aaaa": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `AAAA` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
+					},
+				},
+			},
+			"dns_record_cname": schema.SingleNestedAttribute{
+				Computed:    true,
+				Description: "The `CNAME` DNS record that needs to be added to the DNS nameserver.",
+				Attributes: map[string]schema.Attribute{
+					"name": schema.StringAttribute{
+						Computed:    true,
+						Description: "The name of the DNS record.",
+					},
+					"content": schema.StringAttribute{
+						Computed:    true,
+						Description: "The content of the DNS record.",
+					},
+				},
+			},
+			"created_at": schema.StringAttribute{
+				Computed:            true,
 				Description:         "The time the domain was created, formmatting in RFC3339.",
 				MarkdownDescription: "The time the domain was created, formmatting in [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339).",
 			},
@@ -153,6 +197,15 @@ func (r *domainResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	plan.DNSRecords = dnsRecords
 
+	dnsRecordsMap, diags := convertToDNSRecordsMap(domain.JSON200.DnsRecords)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.DNSRecordA = dnsRecordsMap.a
+	plan.DNSRecordAAAA = dnsRecordsMap.aaaa
+	plan.DNSRecordCNAME = dnsRecordsMap.cname
+
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
@@ -191,6 +244,98 @@ func convertToDNSRecordsList(dnsRecords []client.DnsRecord) (types.List, diag.Di
 	}
 
 	return dnsRecordsList, nil
+}
+
+type dnsRecordsMap struct {
+	a     types.Object
+	aaaa  types.Object
+	cname types.Object
+}
+
+func convertToDNSRecordsMap(dnsRecords []client.DnsRecord) (dnsRecordsMap, diag.Diagnostics) {
+	type dnsRecordInternal struct {
+		name    string
+		content string
+	}
+
+	var a *dnsRecordInternal
+	var aaaa *dnsRecordInternal
+	var cname *dnsRecordInternal
+
+	for _, record := range dnsRecords {
+		switch record.Type {
+		case "A":
+			a = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
+			}
+		case "AAAA":
+			aaaa = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
+			}
+		case "CNAME":
+			cname = &dnsRecordInternal{
+				name:    record.Name,
+				content: record.Content,
+			}
+		}
+	}
+
+	missingRecords := []string{}
+	if a == nil {
+		missingRecords = append(missingRecords, "A")
+	}
+	if aaaa == nil {
+		missingRecords = append(missingRecords, "AAAA")
+	}
+	if cname == nil {
+		missingRecords = append(missingRecords, "CNAME")
+	}
+
+	if len(missingRecords) > 0 {
+		diags := diag.Diagnostics{}
+		diags.AddError("Missing DNS records", fmt.Sprintf("The DNS records obtained from API are missing %s records.", strings.Join(missingRecords, ", ")))
+		return dnsRecordsMap{}, diags
+	}
+
+	recordInfoType := map[string]attr.Type{
+		"name":    types.StringType,
+		"content": types.StringType,
+	}
+
+	aRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(a.name),
+		"content": types.StringValue(a.content),
+	}
+	aObjectValue, diags := types.ObjectValue(recordInfoType, aRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
+	aaaaRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(aaaa.name),
+		"content": types.StringValue(aaaa.content),
+	}
+	aaaaObjectValue, diags := types.ObjectValue(recordInfoType, aaaaRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
+	cnameRecordInfo := map[string]attr.Value{
+		"name":    types.StringValue(cname.name),
+		"content": types.StringValue(cname.content),
+	}
+	cnameObjectValue, diags := types.ObjectValue(recordInfoType, cnameRecordInfo)
+	if diags.HasError() {
+		return dnsRecordsMap{}, diags
+	}
+
+	return dnsRecordsMap{
+		a:     aObjectValue,
+		aaaa:  aaaaObjectValue,
+		cname: cnameObjectValue,
+	}, nil
 }
 
 // Read refreshes the Terraform state with the latest data.
@@ -242,6 +387,15 @@ func (r *domainResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	state.DNSRecords = dnsRecords
+
+	dnsRecordsMap, diags := convertToDNSRecordsMap(domain.JSON200.DnsRecords)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state.DNSRecordA = dnsRecordsMap.a
+	state.DNSRecordAAAA = dnsRecordsMap.aaaa
+	state.DNSRecordCNAME = dnsRecordsMap.cname
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -320,6 +474,15 @@ func (r *domainResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 	plan.DNSRecords = dnsRecords
+
+	dnsRecordsMap, diags := convertToDNSRecordsMap(domain.JSON200.DnsRecords)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	plan.DNSRecordA = dnsRecordsMap.a
+	plan.DNSRecordAAAA = dnsRecordsMap.aaaa
+	plan.DNSRecordCNAME = dnsRecordsMap.cname
 
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)

@@ -21,36 +21,36 @@ resource "deno_domain" "example" {
 }
 
 # Add DNS records to the nameserver.
-resource "cloudflare_record" "my_record_0" {
+resource "cloudflare_record" "a" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[0].name
-  type    = upper(deno_domain.example.dns_records[0].type)
-  value   = deno_domain.example.dns_records[0].content
+  name    = deno_domain.example.dns_record_a.name
+  type    = "A"
+  value   = deno_domain.example.dns_record_a.content
   proxied = false
   ttl     = 120
 }
 
-resource "cloudflare_record" "my_record_1" {
+resource "cloudflare_record" "aaaa" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[1].name
-  type    = upper(deno_domain.example.dns_records[1].type)
-  value   = deno_domain.example.dns_records[1].content
+  name    = deno_domain.example.dns_record_aaaa.name
+  type    = "AAAA"
+  value   = deno_domain.example.dns_record_aaaa.content
   proxied = false
   ttl     = 120
 }
 
-resource "cloudflare_record" "my_record_2" {
+resource "cloudflare_record" "cname" {
   zone_id = "<put your zone ID>"
-  name    = deno_domain.example.dns_records[2].name
-  type    = upper(deno_domain.example.dns_records[2].type)
-  value   = deno_domain.example.dns_records[2].content
+  name    = deno_domain.example.dns_record_cname.name
+  type    = "CNAME"
+  value   = deno_domain.example.dns_record_cname.content
   proxied = false
   ttl     = 120
 }
 
 # Added custom domain needs to be verified for ownership.
 resource "deno_domain_verification" "example" {
-  depends_on = [cloudflare_record.my_record_0, cloudflare_record.my_record_1, cloudflare_record.my_record_2]
+  depends_on = [cloudflare_record.a, cloudflare_record.aaaa, cloudflare_record.cname]
 
   domain_id = deno_domain.example.id
 
